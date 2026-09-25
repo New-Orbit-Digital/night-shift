@@ -1,0 +1,1498 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Night Shift</title>
+<meta name="description" content="A turn-based survival-horror crawl with fully visible odds. Seeded maps, four scenarios, playtest build.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Mono:wght@400;600&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400;1,6..72,500&display=swap">
+<style>
+[hidden]{display:none!important;}
+:root{
+  color-scheme: dark;
+  --ink:#0c0f11; --panel:#141a1d; --panel2:#1a2226; --line:#2a3439; --bone:#e9e3d3; --dim:#8f9793; --faint:#5d6763;
+  --amber:#e3a43c; --amber-d:#8a6424; --blood:#c8483d; --safe:#71b08a; --pa:#9cc4d8;
+  --f-display:"Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --f-narr:"Newsreader", Georgia, "Times New Roman", serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+html,body{background:var(--ink);color:var(--bone);}
+body{font-family:var(--f-mono);font-size:13px;line-height:1.45;padding-inline:16px;padding-block:12px 40px;}
+button,select,input,textarea{font:inherit;color:inherit;}
+button{cursor:pointer;}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+.lbl{display:block;font-family:var(--f-display);text-transform:uppercase;letter-spacing:.08em;font-size:13px;color:var(--dim);margin:14px 0 6px;}
+.fine{color:var(--faint);font-size:12px;margin:6px 0;}
+.primary{background:var(--amber);color:#1a1206;border:0;border-radius:3px;padding:10px 16px;font-family:var(--f-display);font-size:18px;letter-spacing:.06em;text-transform:uppercase;font-weight:800;}
+.primary:hover{background:#f0b44f;}
+.ghost,#again,#newrun{background:transparent;border:1px solid var(--line);border-radius:3px;padding:8px 12px;color:var(--bone);}
+select,input,textarea{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:8px 10px;width:100%;box-sizing:border-box;}
+textarea{resize:vertical;}
+
+/* Setup */
+.setup-wrap{max-width:1100px;margin:0 auto;}
+.brand h1{font-family:var(--f-display);font-weight:800;font-size:clamp(44px,9vw,86px);line-height:.9;margin:8px 0 4px;letter-spacing:.02em;text-transform:uppercase;color:var(--bone);text-wrap:balance;}
+.brand h1::after{content:"";display:block;width:64px;height:4px;background:var(--amber);margin-top:10px;}
+.brand-sub{color:var(--dim);margin:8px 0 18px;}
+.setup-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:28px;}
+.tagline{font-family:var(--f-narr);font-style:italic;font-size:17px;color:var(--bone);margin:10px 0;}
+.goal{color:var(--dim);margin:0;}
+.goal .lbl{display:inline;margin:0 6px 0 0;}
+.seed-row{display:flex;gap:8px;}
+.seed-row input{letter-spacing:.1em;}
+.seed-row button{flex:none;}
+.chars{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.char{display:flex;flex-direction:column;gap:4px;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:12px;}
+.char.sel{border-color:var(--amber);box-shadow:inset 3px 0 0 var(--amber);}
+.char-role{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.08em;color:var(--amber);font-size:13px;}
+.char-name{font-family:var(--f-display);font-size:22px;font-weight:800;}
+.char-stats b{color:var(--bone);font-weight:600;}
+.char-perk{color:var(--dim);}
+.char-intro{font-family:var(--f-narr);font-style:italic;font-size:14px;color:var(--bone);opacity:.85;}
+.custom{margin-top:6px;}
+.custom input[type=range]{padding:0;accent-color:var(--amber);}
+.custom-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:10px;}
+.custom-row .lbl:nth-of-type(1){grid-column:1;grid-row:1}.custom-row select:nth-of-type(1){grid-column:1;grid-row:2}
+.custom-row .lbl:nth-of-type(2){grid-column:2;grid-row:1}.custom-row select:nth-of-type(2){grid-column:2;grid-row:2}
+#begin{margin-top:18px;width:100%;}
+.howto{margin-top:26px;border-top:1px solid var(--line);padding-top:10px;color:var(--dim);max-width:80ch;}
+.howto summary{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.08em;cursor:pointer;color:var(--bone);}
+.howto li{margin:6px 0;}
+
+/* Game */
+#game{max-width:1240px;margin:0 auto;}
+#top{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:end;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:14px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--ink);z-index:5;padding-top:6px;}
+.top-id{display:flex;flex-direction:column;}
+.scen{font-family:var(--f-display);font-weight:800;font-size:24px;text-transform:uppercase;letter-spacing:.03em;line-height:1;}
+.who{color:var(--dim);}
+.top-stats{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:end;}
+.stat{display:flex;flex-direction:column;gap:2px;font-variant-numeric:tabular-nums;}
+.stat .k{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.08em;font-size:11px;color:var(--faint);}
+.stat b{font-size:15px;}
+.pips{display:flex;gap:3px;}
+.pip{width:14px;height:6px;background:var(--safe);display:block;border-radius:1px;}
+.pip.hurt{background:var(--blood);}
+.health.crit b{color:var(--blood);}
+.clock .bar{display:block;width:120px;height:4px;background:var(--panel2);}
+.clock .bar span{display:block;height:100%;background:var(--amber);}
+.log.on b{color:var(--safe);font-size:12px}.log.off b,.log.pending b{color:var(--faint);font-size:12px}.log.error b{color:var(--blood);font-size:12px}
+
+.grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,.8fr);gap:16px;align-items:start;}
+.scene{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:4px;padding:14px;position:relative;overflow:hidden;}
+.scene.dark{background:linear-gradient(180deg,#0a0d0e,#101416);}
+.scene.dark .scene-desc,.scene.dark h2{opacity:.72;}
+.scene.fight{border-color:var(--amber-d);}
+.scene-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline;}
+.scene h2{font-family:var(--f-display);font-weight:800;font-size:clamp(26px,4vw,38px);text-transform:uppercase;margin:0;line-height:1;text-wrap:balance;}
+.tags{display:flex;flex-wrap:wrap;gap:6px;}
+.tag{border:1px solid var(--line);padding:2px 7px;border-radius:2px;font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;}
+.tag.warn{border-color:var(--amber-d);color:var(--amber);}
+.tag.safe{border-color:var(--safe);color:var(--safe);}
+.scene-desc{font-family:var(--f-narr);font-size:17px;font-style:italic;margin:10px 0 14px;max-width:60ch;}
+.lanes{display:flex;flex-direction:column;gap:6px;}
+.lane{display:grid;grid-template-columns:58px minmax(0,1fr);align-items:center;min-height:46px;border-top:1px dashed var(--line);}
+.lane.off{opacity:.35;}
+.lane-k{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.1em;color:var(--faint);font-size:12px;}
+.lane-toks{display:flex;flex-wrap:wrap;gap:6px;}
+.na{color:var(--faint);font-size:11px;}
+.tok{display:inline-flex;align-items:center;gap:6px;background:#241a17;border:1px solid #4b2a24;color:var(--bone);border-radius:3px;padding:4px 8px;}
+.tok b{font-family:var(--f-display);font-size:18px;color:var(--blood);}
+.tok .hp{letter-spacing:1px;color:var(--blood);font-size:11px;}
+.tok .beh{font-size:10px;color:var(--dim);text-transform:uppercase;}
+.tok.stalker{background:#2a1f10;border-color:var(--amber);}
+.tok.stalker b{color:var(--amber);}
+.you{border-top:2px solid var(--amber-d);padding-top:6px;text-align:center;}
+.you-tok{font-family:var(--f-display);letter-spacing:.2em;color:var(--amber);font-size:14px;}
+
+#feed{margin-top:12px;min-height:150px;display:flex;flex-direction:column;gap:6px;}
+.line{margin:0;opacity:.62;}
+.line.new{opacity:1;}
+.line.narr,.line.room{font-family:var(--f-narr);font-style:italic;font-size:16px;}
+.line.room{font-style:normal;color:var(--bone);}
+.line.sys{color:var(--bone);}
+.line.pa{color:var(--pa);font-size:12px;text-transform:uppercase;letter-spacing:.04em;}
+.pa-k{border:1px solid var(--pa);padding:0 4px;font-size:10px;margin-right:4px;}
+
+#dice{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;border-top:1px solid var(--line);padding-top:10px;}
+.die{display:flex;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:6px 10px 6px 6px;animation:drop .35s ease-out;}
+.die-face{width:34px;height:34px;display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:22px;border-radius:4px;background:var(--panel2);font-variant-numeric:tabular-nums;}
+.die.ok .die-face{background:var(--safe);color:#0c1a12;}
+.die.bad .die-face{background:var(--blood);color:#1c0806;}
+.die.info .die-face{background:var(--amber-d);color:var(--bone);}
+.die-meta{display:flex;flex-direction:column;}
+.die-l{font-size:12px;}.die-n{font-size:11px;color:var(--faint);}
+@keyframes drop{from{transform:translateY(-6px) rotate(-8deg);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.die{animation:none}}
+
+#actions{display:flex;flex-direction:column;gap:12px;}
+.phase-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;}
+.phase-head h3{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:22px;margin:0;letter-spacing:.03em;}
+.ap{display:flex;align-items:center;gap:4px;color:var(--dim);}
+.ap i{width:12px;height:12px;border:1px solid var(--amber);display:inline-block;border-radius:50%;}
+.ap i.on{background:var(--amber);}
+.act-group{display:flex;flex-direction:column;gap:6px;}
+.grp{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.1em;color:var(--faint);font-size:12px;}
+.act{display:flex;flex-direction:column;gap:3px;text-align:left;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:3px;padding:8px 10px;}
+.act:hover:not(:disabled){background:var(--panel2);border-color:#3a464c;}
+.act:disabled{opacity:.42;cursor:not-allowed;}
+.act.good{border-left-color:var(--safe);}.act.mid{border-left-color:var(--amber);}.act.low{border-left-color:var(--blood);}
+.act-main{display:flex;justify-content:space-between;gap:10px;align-items:baseline;}
+.act-l{font-weight:600;font-size:13px;}
+.odds{font-family:var(--f-display);font-weight:800;font-size:22px;line-height:1;font-variant-numeric:tabular-nums;}
+.act.good .odds{color:var(--safe)}.act.mid .odds{color:var(--amber)}.act.low .odds{color:var(--blood)}
+.act-d{color:var(--dim);font-size:12px;}
+.act-meta{display:flex;gap:10px;font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;}
+.act-meta .risk{color:var(--amber);}
+.modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+.mode{display:flex;flex-direction:column;gap:2px;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:6px 8px;font-size:11px;color:var(--dim);}
+.mode b{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.06em;font-size:15px;color:var(--bone);}
+.mode.on{border-color:var(--amber);background:#221b10;}
+.prompt{border:1px solid var(--amber);border-radius:4px;padding:10px;background:#1d170d;}
+.prompt p{margin:0 0 8px;}
+.prompt-row{display:grid;gap:6px;}
+.warnline{color:var(--amber);margin:0;}
+
+#side{display:flex;flex-direction:column;gap:14px;}
+.side-block h4{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.08em;font-size:15px;margin:0 0 6px;display:flex;justify-content:space-between;}
+.slots{color:var(--dim);font-family:var(--f-mono);font-size:12px;letter-spacing:0;text-transform:none;}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;}
+.list li{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:5px 8px;}
+.list li.free{border-style:dashed;background:transparent;color:var(--dim);}
+.list li.fine{background:transparent;border:0;padding:0;}
+.mini{background:transparent;border:1px solid var(--line);border-radius:2px;padding:2px 8px;font-size:11px;flex:none;}
+.mini:disabled{opacity:.4;}
+.map{width:100%;max-width:260px;display:block;}
+.map line{stroke:var(--line);stroke-width:3;}
+.map line.jam{stroke:var(--blood);stroke-dasharray:4 3;}
+.map rect{fill:var(--panel);stroke:var(--line);}
+.map .v rect{fill:var(--panel2);stroke:#3c484d;}
+.map .u rect{fill:transparent;stroke-dasharray:3 3;}
+.map .hot rect{stroke:var(--blood);}
+.map .safe rect{stroke:var(--safe);}
+.map .goal rect{stroke:var(--amber);}
+.map .lock rect{stroke:var(--amber-d);}
+.map .cur rect{fill:var(--amber);stroke:var(--amber);}
+.map text{fill:var(--dim);font-family:var(--f-display);font-size:15px;text-anchor:middle;font-weight:800;}
+.map .cur text{fill:#1a1206;}
+.legend{display:flex;flex-wrap:wrap;gap:4px 10px;color:var(--faint);font-size:11px;margin:6px 0 0;}
+
+#modal{position:fixed;inset:0;background:rgba(5,7,8,.8);display:grid;place-items:center;padding:16px;z-index:20;}
+.doc{background:#e6dfcc;color:#211c14;max-width:520px;width:100%;padding:22px;border-radius:2px;box-shadow:0 10px 40px #000;}
+.doc-k{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#6b604c;margin:0;}
+.doc h3{font-family:var(--f-display);font-size:26px;text-transform:uppercase;margin:4px 0 10px;}
+.doc-t{font-family:var(--f-narr);font-size:17px;line-height:1.5;}
+#end{position:fixed;inset:0;background:rgba(5,7,8,.86);display:grid;place-items:center;padding:16px;z-index:15;overflow:auto;}
+.end-card{background:var(--panel);border:1px solid var(--line);border-radius:4px;max-width:620px;width:100%;padding:22px;box-sizing:border-box;}
+.end-k{color:var(--dim);margin:0;}
+.end-card h2{font-family:var(--f-display);font-weight:800;font-size:clamp(38px,8vw,60px);text-transform:uppercase;margin:4px 0;line-height:1;}
+.end-narr{font-family:var(--f-narr);font-style:italic;font-size:17px;}
+.end-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin:14px 0;}
+.end-stats div{background:var(--panel2);padding:6px 8px;border-radius:3px;}
+.end-stats dt{font-size:11px;color:var(--faint);text-transform:uppercase;}
+.end-stats dd{margin:0;font-size:16px;font-variant-numeric:tabular-nums;}
+.end-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+
+@media (max-width:980px){.grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}#side{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));}}
+@media (max-width:680px){.grid{grid-template-columns:minmax(0,1fr);}.setup-grid{grid-template-columns:minmax(0,1fr);}.chars{grid-template-columns:minmax(0,1fr);}.modes{grid-template-columns:minmax(0,1fr);}#top{position:static;}}
+</style>
+</head>
+<body>
+<div id="setup"></div>
+<div id="game" hidden>
+  <div id="top"></div>
+  <div class="grid">
+    <section><div id="scene" class="scene"></div><div id="feed" aria-live="polite"></div><div id="dice"></div></section>
+    <section id="actions"></section>
+    <aside id="side"></aside>
+  </div>
+</div>
+<div id="modal" hidden></div>
+<div id="end" hidden></div>
+<script>
+// ===== CONTENT DATA (v0 playtest) =====
+// Voice: Night Shift narrator (weary, sardonic) for room text + barks.
+// Clinical/PA voice (A) only for escalations and clock events.
+
+const PERKS = {
+  START_SHOTGUN: { name: "Service shotgun", text: "Starts with a shotgun (4 loaded) and a box of shells as well as the handgun." },
+  TRIAGE:        { name: "Triage", text: "Med kits heal 2 steps instead of 1. Trauma kits heal 3." },
+  MASTER_KEYS:   { name: "Master ring", text: "Opens the first locked door without its key, and forces jammed doors automatically." },
+  HEAVY_BLADE:   { name: "Heavy blade", text: "Knife deals 2 damage instead of 1." },
+  EXTRA_AMMO:    { name: "Extra magazine pouch", text: "Starts with one more handgun box (16)." },
+  QUIET_FEET:    { name: "Quiet feet", text: "Careful costs no extra tick." },
+  HARDY:         { name: "Hardy", text: "Takes 5 wounds to die instead of 4." },
+  SPARE_SHIV:    { name: "Spare shiv", text: "Starts with a second Last Resort." },
+  SHARPSHOOTER:  { name: "Sharpshooter", text: "No −1 penalty for guns at Far." }
+};
+
+// Shared Night Shift barks (≥4 per trigger)
+const BARKS = {
+  enterEmpty: ["Nobody home. Don't get comfortable.", "Quiet. Quiet is a loan, not a gift.", "Empty. For now.", "Just you and the hum of the lights."],
+  enterHostile: ["You're not alone in here.", "Company. The bad kind.", "Something turns toward the door. Toward you.", "They were waiting. They're always waiting."],
+  ambush: ["You heard it a second too late.", "It was closer than it looked.", "Teeth first, questions later.", "The dark had an opinion."],
+  hit: ["That one landed.", "It staggers.", "Meat and bone. Mostly meat.", "Good. Again."],
+  miss: ["Wide. Your hands aren't steady anymore.", "Plaster, not flesh.", "The shot goes somewhere. Not there.", "Breathe. Then miss less."],
+  kill: ["It stays down.", "One less.", "Finally still.", "That's the end of that one."],
+  rises: ["It gets up. They always get up.", "Not dead. Just resting.", "It remembers how to stand.", "Down isn't out. Not here."],
+  lunge: ["One last lunge on the way out.", "It spends its last breath on you.", "Dying, and still hungry."],
+  bite: ["Teeth. Warm, then cold.", "You feel that one in your bones.", "It takes a piece of you.", "Blood where blood shouldn't be."],
+  biteMiss: ["Its teeth close on air.", "Close. Too close.", "It snaps and misses.", "Not this time."],
+  grabbed: ["It has you by the collar.", "Fingers like cold wire.", "It won't let go."],
+  noise: ["That was loud. Something agrees.", "Somewhere nearby, something heard that.", "The building heard you.", "Every shot is an invitation."],
+  noiseNothing: ["The echo dies. Nothing answers.", "Loud, but nobody's listening. This time."],
+  turnover: ["That's your moment, gone.", "Fumbled. They don't fumble.", "Too slow. Their turn.", "It cost you the initiative."],
+  lowHealth: ["You're leaking. Make it quick.", "Every step costs more now.", "You won't take many more of those.", "Hold it together."],
+  heal: ["Gauze, tape, a prayer.", "Better. Not good. Better.", "You patch what you can."],
+  foundAmmo: ["Sixteen more chances.", "Somebody didn't get to use these.", "Brass. Heavy. Beautiful."],
+  foundItem: ["Worth the look.", "Pockets are for this.", "Someone left in a hurry."],
+  foundNothing: ["Nothing worth carrying.", "Dust and paperwork.", "Picked clean."],
+  searchSlow: ["Your hands shake. It takes longer.", "Drawers stick. Seconds slip.", "You fumble through it the slow way."],
+  stepBack: ["You make space. Space is life.", "Back. Breathe. Aim.", "You give ground on purpose."],
+  flee: ["You run. Nobody's keeping score.", "Out. Now.", "Distance is the only medicine left."],
+  fleeFail: ["The door's farther than it looked.", "They cut you off."],
+  careful: ["Slow. Soft. Past them.", "You move like the floor might hear.", "Heel, toe. Heel, toe."],
+  bold: ["Shoulder down. Through.", "You don't ask. You shove.", "Fast and ugly. It works."],
+  boldFail: ["Loud and clumsy. They noticed.", "You clip a cart. Everything turns."],
+  death: ["Another name on the board.", "The night keeps you.", "Lights out."],
+  escape: ["You made it. Don't look back.", "Out. Alive. Mostly.", "Dawn, and you're still in it."],
+  reload: ["Click. Better.", "Fresh magazine. Fresh odds."],
+  empty: ["Click. Nothing.", "Empty. Of course it's empty."]
+};
+
+const SCENARIOS = {
+  hospital: {
+    id: "hospital",
+    name: "Mercy Hollow Regional",
+    tagline: "A county hospital under lockdown. The basement was never on the floor plan.",
+    intro: "The lockdown order came at 22:00. By midnight the wards stopped answering. The only way out is up: power the roof elevator and reach the helipad before the containment team arrives at dawn.",
+    goal: "Get the Maintenance keycard, reach the Generator fuse beyond the Sublevel Stairwell, then power the Elevator Machine Room.",
+    term: { one: "patient", many: "patients" },
+    stalker: "the Orderly",
+    stalkerDesc: "Seven feet of hospital whites and patience.",
+    keyA: { name: "Maintenance keycard", doc: "Laminated. The photo has been scratched out." },
+    keyB: { name: "Generator fuse", doc: "Heavy ceramic, warm to the touch. Someone pulled it on purpose." },
+    lockA: { name: "Sublevel Stairwell", desc: "A steel door with a card reader blinking red.", size: 6, noise: "echo" },
+    goalRoom: { name: "Elevator Machine Room", desc: "Cables, a dead panel, and an empty fuse socket.", size: 8, noise: "muffled", action: "Seat the fuse and ride to the roof" },
+    entry: { name: "Ambulance Bay", desc: "Rain on the roll-up door. Stretchers parked like they're waiting for you.", size: 10, noise: "muffled" },
+    safe: { name: "Chapel", desc: "Pews stacked against the far door. A candle somebody keeps lighting.", size: 8, noise: "normal" },
+    win: "The elevator groans up nine floors. Rotor wash, a hand reaching down, and the hospital shrinking beneath you.",
+    lose: "06:00. Containment is complete. The building is sealed and the fires are started from the top down.",
+    rooms: {
+      extreme: [
+        { name: "Ward Corridor", desc: "Linoleum, gurneys, and handprints at shoulder height.", noise: "echo" },
+        { name: "Service Hallway", desc: "Laundry carts and a flickering exit sign pointing the wrong way.", noise: "normal" }],
+      common: [
+        { name: "Patient Room", desc: "A bed with the rails up. The sheets are still warm.", noise: "normal" },
+        { name: "Nurses' Station", desc: "Phones off the hook. A mug that says WORLD'S OKAYEST NURSE.", noise: "normal" },
+        { name: "Supply Closet", desc: "Shelves of gauze. Someone went through here in a panic.", noise: "muffled" }],
+      unique: [
+        { name: "Radiology", desc: "The big machine ticks as it cools. The lead aprons hang like skins.", noise: "muffled" },
+        { name: "Cafeteria", desc: "Trays everywhere. Nobody finished their Jell-O.", noise: "echo" },
+        { name: "Pediatrics Playroom", desc: "Bright murals. You don't look at the murals.", noise: "normal" }],
+      special: [
+        { name: "Security Office", desc: "Monitors show hallways you haven't seen yet. Most are empty. Most.", noise: "normal" },
+        { name: "Pharmacy", desc: "Cage door bent outward, not in.", noise: "muffled" }],
+      huge: [
+        { name: "Main Atrium", desc: "Three stories of glass and a fountain that's still running.", noise: "echo" },
+        { name: "Surgical Theater", desc: "Tiered seats for an audience. The lights on the table are still on.", noise: "echo" }],
+      life: [
+        { name: "Morgue", desc: "Cold room. Every drawer shut but one.", noise: "muffled" }]
+    },
+    docs: [
+      { title: "Shift note, Ward 3", author: "R.N. Paula Estes", text: "Bed 12 bit an orderly at 19:40. Charted as 'agitation.' Admin says the transfer patients from Sublevel are 'stable, do not engage.' They are not stable. They are not engaging. They stand at the windows facing the basement. I'm taking the stairs home tonight. If anyone reads this, the fuse cabinet in the machine room was emptied on purpose. Ask who signed for it." },
+      { title: "Calloway Biologics — facilities memo", author: "Site Liaison", text: "Per our lease, Sublevel access is restricted to Calloway personnel. In the event of a containment incident, hospital staff should cut elevator power at the fuse and await the response team. Evacuation of the upper floors is not anticipated. Please remind staff that the helipad is for Calloway use only." },
+      { title: "Crayon drawing, taped to a locker", author: "unsigned", text: "A tall man in white carrying a bed on his back. Underneath, in careful letters: HE DOESNT SLEEP. HE JUST WALKS. HE LOOKS IN EVERY ROOM." }
+    ],
+    pa: {
+      warn: ["Attention. Containment response in progress. Remain in place.", "Facilities notice: exterior doors are secured until 06:00."],
+      wanderer: ["Code Gray, adjacent unit. Staff respond.", "Patient movement detected, adjacent corridor."],
+      power: ["Power fault, this wing. Emergency lighting unavailable.", "Generator load shed. Lighting off, this wing."],
+      jam: ["Fire doors engaged. Manual release required.", "Door fault logged. Mechanical release only."],
+      stalker: ["Transport requested to your location.", "Orderly en route. Please wait."],
+      quiet: ["All clear, this unit. Remain in place.", "No incidents to report."],
+      dawn: ["Containment at 06:00. This is the final notice."]
+    },
+    presets: [
+      { id: "deputy", name: "Deputy Ruth Oakes", role: "County deputy", fight: 7, wits: 3, perk: "START_SHOTGUN", intro: "She drove the last ambulance in herself. Her kid sister works nights in Pediatrics and hasn't answered since ten." },
+      { id: "paramedic", name: "Dev Mallory", role: "Paramedic", fight: 5, wits: 5, perk: "TRIAGE", intro: "His brother was admitted Tuesday for a broken wrist. Room number on a sticky note in Dev's glove." },
+      { id: "janitor", name: "Luis Ferro", role: "Night janitor", fight: 3, wits: 7, perk: "MASTER_KEYS", intro: "Twenty years of mopping these halls. He knows every door, and which ones Calloway told him never to open." }
+    ]
+  },
+
+  hotel: {
+    id: "hotel",
+    name: "The Aldermere",
+    tagline: "A mountain resort, snowed in for the season. Checkout is not optional.",
+    intro: "The pass closed at dusk and the phones went with it. The guests stopped being guests around midnight. The cable car down the mountain still runs, if you can find the tram key before the storm peaks at dawn.",
+    goal: "Get the Staff master key, pass the Service Tunnel to reach the Tram key, then start the Cable Car Station.",
+    term: { one: "guest", many: "guests" },
+    stalker: "the Doorman",
+    stalkerDesc: "Brass buttons, white gloves, and a smile that doesn't move.",
+    keyA: { name: "Staff master key", doc: "Brass, on a velvet fob stitched with the hotel crest." },
+    keyB: { name: "Tram key", doc: "A heavy key with a paper tag: CAR 2 — SEASONAL." },
+    lockA: { name: "Service Tunnel", desc: "A staff door behind the kitchens. Cold air breathes under it.", size: 6, noise: "echo" },
+    goalRoom: { name: "Cable Car Station", desc: "Frosted glass, a control lectern, and a car rocking in the wind.", size: 10, noise: "normal", action: "Start the tram and ride it down" },
+    entry: { name: "Grand Lobby", desc: "A fire in the hearth nobody is tending. Luggage everywhere.", size: 12, noise: "echo" },
+    safe: { name: "Wine Cellar", desc: "Stone walls, a heavy oak door, and a lock that works from the inside.", size: 6, noise: "muffled" },
+    win: "The car lurches off the platform into white. Behind you, a figure in a doorman's coat watches from the station glass, and doesn't wave.",
+    lose: "Dawn brings the storm's full weight. The power fails, the cable freezes, and the Aldermere keeps its guests.",
+    rooms: {
+      extreme: [
+        { name: "Guest Hallway", desc: "Carpet patterned to hide stains. It's working hard tonight.", noise: "muffled" },
+        { name: "Service Corridor", desc: "Room-service carts, cold plates, one shoe.", noise: "normal" }],
+      common: [
+        { name: "Guest Suite", desc: "Turndown service. A chocolate on the pillow and a bite out of the pillow.", noise: "muffled" },
+        { name: "Linen Room", desc: "Folded towels in perfect stacks. One stack is red.", noise: "muffled" },
+        { name: "Housekeeping Office", desc: "Rotas, master schedules, a radio playing static.", noise: "normal" }],
+      unique: [
+        { name: "Kitchens", desc: "Knife block empty. Burners still lit.", noise: "echo" },
+        { name: "Ski Rental", desc: "Racks of boots and poles. Ski poles make poor weapons. You check anyway.", noise: "normal" },
+        { name: "Billiards Room", desc: "A game left mid-break. Somebody was winning.", noise: "normal" }],
+      special: [
+        { name: "Manager's Office", desc: "A safe behind a painting, because of course.", noise: "muffled" },
+        { name: "Security Booth", desc: "Keys on hooks, most of them gone. A thermos of cold coffee.", noise: "normal" }],
+      huge: [
+        { name: "Ballroom", desc: "Chandeliers, a string quartet's abandoned chairs, and a long, long floor.", noise: "echo" },
+        { name: "Indoor Pool", desc: "Steam, tile, and something slow under the water.", noise: "echo" }],
+      life: [
+        { name: "Honeymoon Suite", desc: "Rose petals leading to a locked bathroom door.", noise: "muffled" }]
+    },
+    docs: [
+      { title: "Guest comment card", author: "Rm. 214", text: "Lovely views. Staff attentive. However, the gentleman in 216 has been knocking on our wall in a steady rhythm since supper and the front desk will not answer. My husband went to speak with him an hour ago. He has not come back. We would like a late checkout." },
+      { title: "Night manager's log", author: "E. Varga", text: "Pass closed 17:10. Lost phones 19:00. The Doorman has not left his post in six hours. I asked him to help with luggage and he only smiled. Moving the tram key to the station safe room past the tunnel. Master key stays with me. If I'm not at the desk, check the kitchens. I'll be hiding in the kitchens." },
+      { title: "Brochure, water-stained", author: "The Aldermere", text: "Since 1911, the Aldermere has offered a retreat from the world below. Our guests return year after year. Many never leave. Ask the concierge about our Seasonal Membership!" }
+    ],
+    pa: {
+      warn: ["Good evening. Due to weather, the cable car will cease operation at dawn.", "The front desk thanks you for your patience."],
+      wanderer: ["A guest is requesting assistance nearby.", "Room service is on its way to your floor."],
+      power: ["We are experiencing a brief power interruption in this wing.", "Lighting in this wing will be restored shortly."],
+      jam: ["For your safety, some doors are temporarily secured.", "Housekeeping has locked this passage."],
+      stalker: ["The Doorman will be with you momentarily.", "Your escort is on the way."],
+      quiet: ["Enjoy your stay.", "The spa remains open for members."],
+      dawn: ["Final departure at dawn. Guests remaining will be accommodated indefinitely."]
+    },
+    presets: [
+      { id: "chef", name: "Marguerite Loy", role: "Head chef", fight: 7, wits: 3, perk: "HEAVY_BLADE", intro: "She ran the line through two avalanches and a health inspection. Her son is a bellhop. He was on the fourth floor." },
+      { id: "skipatrol", name: "Tom Beckett", role: "Ski patroller", fight: 5, wits: 5, perk: "HARDY", intro: "He's pulled people out of crevasses. He came up for his father, who tends bar on weekends and never checks his phone." },
+      { id: "concierge", name: "Anika Sorrel", role: "Night concierge", fight: 3, wits: 7, perk: "MASTER_KEYS", intro: "Her key cards open almost everything. Her twin sister checked into 309 for the weekend." }
+    ]
+  },
+
+  courthouse: {
+    id: "courthouse",
+    name: "Marrow County Courthouse",
+    tagline: "A small-town courthouse and jail, with the river rising and the town about to be quarantined.",
+    intro: "The trial was supposed to end today. Then the defendant bit the bailiff, the jury stopped moving, and the river breached the levee. Carry the evidence out through the old flood tunnel before the county seals the town at dawn.",
+    goal: "Get the Holding cell key ring, open the Records Vault to reach Evidence box 4471, then carry it out the Old Tunnel Gate.",
+    term: { one: "defendant", many: "defendants" },
+    stalker: "the Warden",
+    stalkerDesc: "A retired warden who never retired. Carries his ring of keys like a flail.",
+    keyA: { name: "Holding cell key ring", doc: "Twelve keys, one of them stamped VAULT." },
+    keyB: { name: "Evidence box 4471", doc: "Taped, sealed, heavier than paper should be." },
+    lockA: { name: "Records Vault", desc: "A bank-style door someone forgot to spin shut.", size: 6, noise: "muffled" },
+    goalRoom: { name: "Old Tunnel Gate", desc: "An iron gate over black water, and a boat on a chain.", size: 8, noise: "echo", action: "Take the evidence through the tunnel" },
+    entry: { name: "Courthouse Steps", desc: "Sandbags, sirens in the distance, and the doors propped open with a chair.", size: 10, noise: "normal" },
+    safe: { name: "Judge's Chambers", desc: "Leather chairs, law books, and a door built to keep out reporters.", size: 6, noise: "muffled" },
+    win: "The boat bumps along the tunnel roof. The box sits on your knees. Somewhere behind you, a ring of keys jingles, and stops.",
+    lose: "At dawn the county seals every road. The river takes the ground floor. The evidence goes down with the building.",
+    rooms: {
+      extreme: [
+        { name: "Marble Hallway", desc: "Portraits of judges who all look disappointed in you.", noise: "echo" },
+        { name: "Back Corridor", desc: "Fluorescent tubes, a water fountain, a trail of wet footprints.", noise: "normal" }],
+      common: [
+        { name: "Clerk's Office", desc: "Filing cabinets and a coffee maker still gurgling.", noise: "normal" },
+        { name: "Holding Cell", desc: "The bars are fine. The lock is not.", noise: "echo" },
+        { name: "Jury Room", desc: "Twelve chairs, eleven pushed back.", noise: "muffled" }],
+      unique: [
+        { name: "Law Library", desc: "Stacks tall enough to hide in. Something already is.", noise: "muffled" },
+        { name: "Press Room", desc: "Cameras on tripods, still recording nothing.", noise: "normal" },
+        { name: "Boiler Room", desc: "Pipes and pressure gauges. The water's ankle-deep.", noise: "muffled" }],
+      special: [
+        { name: "Sheriff's Substation", desc: "A gun locker with a broken padlock.", noise: "normal" },
+        { name: "Property Room", desc: "Seized belongings in labeled bags.", noise: "muffled" }],
+      huge: [
+        { name: "Main Courtroom", desc: "The gallery is full. Nobody is sitting down.", noise: "echo" },
+        { name: "Cell Block", desc: "Two tiers of cells. Some doors open. Some shouldn't be.", noise: "echo" }],
+      life: [
+        { name: "Evidence Intake", desc: "Chain-of-custody forms, and one signature that keeps repeating.", noise: "normal" }]
+    },
+    docs: [
+      { title: "Court transcript, p. 212", author: "Stenographer", text: "THE COURT: Counsel, is your client all right? MR. PRICE: He's fine, Your Honor. THE DEFENDANT: [indiscernible] THE COURT: Bailiff, please — BAILIFF: He's cold, Judge. He's cold as — [recess taken at 2:14 p.m.] [record resumes] [no one present] [no one present] [no one present]" },
+      { title: "Sticky note on the vault door", author: "Clerk D. Hsu", text: "Box 4471 is in the vault, not intake. The lab results inside are why they're closing the roads. Do not let the county take it. Holding cell ring opens the vault — deputy has it, or had it." },
+      { title: "Flood plan, 1962", author: "Marrow County Works", text: "In the event of high water, the old tunnel beneath the courthouse connects to the river landing. A boat is maintained at the tunnel gate. Access is through the lowest level. It is not recommended." }
+    ],
+    pa: {
+      warn: ["Marrow County emergency alert. Roads close at dawn.", "Residents should shelter in place until further notice."],
+      wanderer: ["Inmate count discrepancy, adjacent block.", "Unauthorized movement, adjacent hallway."],
+      power: ["Utility outage reported in this section.", "Flood damage. Power offline in this section."],
+      jam: ["Security lockdown engaged on this corridor.", "Door secured by order of the court."],
+      stalker: ["The Warden has been notified of your location.", "Count time. Remain where you are."],
+      quiet: ["Court is in recess.", "No further alerts at this time."],
+      dawn: ["Quarantine takes effect at dawn. Remaining persons will not be retrieved."]
+    },
+    presets: [
+      { id: "bailiff", name: "Harold Tate", role: "Bailiff", fight: 7, wits: 3, perk: "EXTRA_AMMO", intro: "Thirty years keeping order in a room that just lost it. His wife is the court stenographer. She didn't make it out of the courtroom." },
+      { id: "reporter", name: "June Park", role: "Court reporter", fight: 4, wits: 6, perk: "QUIET_FEET", intro: "She hears everything and nobody notices her. Her father is the defendant's lawyer, still somewhere in the building." },
+      { id: "trustee", name: "Cody Rusk", role: "Inmate trustee", fight: 6, wits: 4, perk: "SPARE_SHIV", intro: "Three months left on his sentence. His little brother is in the cell block, one tier up." }
+    ]
+  },
+
+  campus: {
+    id: "campus",
+    name: "Greenhaven Research Station",
+    tagline: "An agricultural research campus on the plains. The crops were never the experiment.",
+    intro: "Greenhaven studies drought-proof wheat, officially. The specimens got out at dusk. A sterilization run is scheduled for dawn, and it doesn't care who's still on the ground. Reach the silo radio and call it off.",
+    goal: "Get the Silo access card, pass the Greenhouse Row to reach the Transmitter battery, then power the Silo Radio Room.",
+    term: { one: "specimen", many: "specimens" },
+    stalker: "the Handler",
+    stalkerDesc: "A figure in a full bio-suit, visor fogged from the inside.",
+    keyA: { name: "Silo access card", doc: "A clip-on card with a green stripe and a coffee ring." },
+    keyB: { name: "Transmitter battery", doc: "Military surplus, heavy, still charged." },
+    lockA: { name: "Greenhouse Row", desc: "A card-locked airlock. Condensation runs down the glass.", size: 8, noise: "muffled" },
+    goalRoom: { name: "Silo Radio Room", desc: "A shortwave rig at the top of a ladder, battery bay open and empty.", size: 6, noise: "echo", action: "Install the battery and call off the run" },
+    entry: { name: "Loading Yard", desc: "Tractors, pallets of seed, and wind across a thousand acres.", size: 12, noise: "normal" },
+    safe: { name: "Seed Vault", desc: "A cold, sealed room built to outlast everything. Tonight it might.", size: 6, noise: "muffled" },
+    win: "The radio crackles back: 'Greenhaven, copy. Run is scrubbed.' You sit in the silo and listen to the planes turn away.",
+    lose: "At dawn the crop dusters come in low. They aren't dusting crops.",
+    rooms: {
+      extreme: [
+        { name: "Lab Corridor", desc: "Clean white walls, one long smear down the middle.", noise: "echo" },
+        { name: "Equipment Shed", desc: "Tools on pegboards, outlines where tools used to be.", noise: "normal" }],
+      common: [
+        { name: "Soil Lab", desc: "Soil samples in jars. One of them is moving.", noise: "normal" },
+        { name: "Dormitory", desc: "Bunk beds, a guitar, and a calendar with the days crossed off.", noise: "muffled" },
+        { name: "Break Room", desc: "A vending machine humming. Chips, 75 cents.", noise: "normal" }],
+      unique: [
+        { name: "Irrigation Control", desc: "Valve wheels and a map of pipes nobody fully understands.", noise: "muffled" },
+        { name: "Insectary", desc: "Mesh cages, most empty. The buzzing isn't coming from the cages.", noise: "normal" },
+        { name: "Grain Elevator", desc: "Dust hangs in the air. One spark and you'd know about it.", noise: "echo" }],
+      special: [
+        { name: "Security Trailer", desc: "A cot, a radio with no battery, and a rifle rack with no rifles.", noise: "normal" },
+        { name: "Chemical Store", desc: "Drums with hazard labels. Some leak. Some hiss.", noise: "muffled" }],
+      huge: [
+        { name: "Test Field", desc: "Wheat taller than you. Shapes move through it against the wind.", noise: "normal" },
+        { name: "Specimen Hall", desc: "Rows of tanks, most of them cracked open from the inside.", noise: "echo" }],
+      life: [
+        { name: "Director's Office", desc: "Framed awards, a shredder jammed mid-page.", noise: "muffled" }]
+    },
+    docs: [
+      { title: "Lab notebook, p. 41", author: "Dr. N. Achebe", text: "Trial 9. The strain doesn't touch wheat. It was never about wheat. It spreads through the irrigation and it prefers mammals. Director says the funding is 'agricultural security.' I asked whose security. I'm keeping the transmitter battery in the greenhouse where only the green-stripe cards can get it." },
+      { title: "Flight plan (partial)", author: "Contractor", text: "06:00 sterilization pass, Greenhaven grid A–F. Ground personnel presumed lost. Abort on authenticated radio call from silo station only." },
+      { title: "Note pinned to a bunk", author: "Kip", text: "Mom — if you get this, I'm okay. I'm in the seed vault with two others. The Handler came by twice. It checks the doors. It doesn't try them. Yet." }
+    ],
+    pa: {
+      warn: ["Station advisory: scheduled field treatment at 06:00.", "All personnel report to muster points."],
+      wanderer: ["Containment breach, adjacent building.", "Specimen tracking lost, adjacent zone."],
+      power: ["Grid fault, this building. Backup offline.", "Solar array disconnected. Lighting unavailable."],
+      jam: ["Biosafety lockout engaged. Manual override required.", "Airlock cycling fault."],
+      stalker: ["Handler dispatched to your zone.", "Retrieval team inbound."],
+      quiet: ["Station systems nominal.", "No anomalies detected."],
+      dawn: ["Field treatment begins at 06:00. Clear all zones."]
+    },
+    presets: [
+      { id: "guard", name: "Wes Horne", role: "Security guard", fight: 7, wits: 3, perk: "SHARPSHOOTER", intro: "Ex-Army, now watching seed pallets for eleven an hour. His nephew Kip is a summer intern." },
+      { id: "researcher", name: "Dr. Nia Achebe", role: "Field researcher", fight: 4, wits: 6, perk: "TRIAGE", intro: "She wrote the notebook that explains all this. Her sister drives the night supply truck and was due at nine." },
+      { id: "farmhand", name: "Otis Grady", role: "Farmhand", fight: 6, wits: 4, perk: "HARDY", intro: "He's pulled calves at 3 a.m. in a blizzard. His daughter works the insectary. She texted 'hiding' at 10:52." }
+    ]
+  }
+};
+
+// Item catalog. slot:false = does not take a slot.
+const ITEMS = {
+  handgun:   { name: "Handgun", kind: "weapon", slot: true },
+  shotgun:   { name: "Shotgun", kind: "weapon", slot: true },
+  hgAmmo:    { name: "Handgun rounds", kind: "ammo", ammo: "handgun", cap: 16, slot: true },
+  shells:    { name: "Shotgun shells", kind: "ammo", ammo: "shotgun", cap: 6, slot: true },
+  medkit:    { name: "Med kit", kind: "heal", heal: 1, slot: true },
+  trauma:    { name: "Trauma kit", kind: "heal", heal: 2, slot: true },
+  lastResort:{ name: "Last Resort", kind: "passive", slot: true, text: "Cancels one wound, used automatically when a wound would kill you." },
+  adrenaline:{ name: "Adrenaline", kind: "reroll", slot: true, text: "After a failed Fight roll: reroll it. A 10 on the reroll = 1 wound." },
+  pouch:     { name: "Belt pouch", kind: "pouch", slot: false, text: "+1 inventory slot (max 8)." },
+  keyA:      { name: "Key A", kind: "key", slot: true },
+  keyB:      { name: "Key B", kind: "key", slot: true }
+};
+
+const WEAPONS = {
+  knife:   { name: "Knife",   dmg: [1, 0, 0], mag: 0, noise: 0 },
+  handgun: { name: "Handgun", dmg: [1, 1, 1], mag: 6, noise: 1 },
+  shotgun: { name: "Shotgun", dmg: [3, 2, 0], mag: 4, noise: 3 }
+};
+
+const RULES = {
+  version: "v0.4-playtest-1",
+  clockMax: 80, escalationEvery: 15,
+  menace: 3, ap: 2, wounds: 4, baseSlots: 6, maxSlots: 8,
+  healthNames: ["Steady", "Hurt", "Bleeding", "Critical", "Dead"],
+  bands: ["Close", "Near", "Far"],
+  rooms: 20
+};
+
+// ===== ENGINE =====
+// Seeded RNG ------------------------------------------------------------
+function hashStr(s) { let h = 1779033703 ^ s.length; for (let i = 0; i < s.length; i++) { h = Math.imul(h ^ s.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); } h = Math.imul(h ^ (h >>> 16), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); return (h ^= h >>> 16) >>> 0; }
+function mulberry32(a) { return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const SEED_WORDS = ["ASH", "BONE", "CHART", "DUSK", "EMBER", "FUSE", "GAUZE", "HUSH", "IRON", "LATCH", "MOTH", "NIGHT", "OAK", "PALE", "RUST", "SALT", "TALLOW", "VIGIL", "WARD", "YEW"];
+function randomSeed() { const w = SEED_WORDS[Math.floor(Math.random() * SEED_WORDS.length)]; return w + "-" + String(Math.floor(1000 + Math.random() * 9000)); }
+
+let G = null;              // game state
+let R = null;              // dice rng
+function rint(rng, n) { return 1 + Math.floor(rng() * n); }
+function pick(rng, arr) { return arr[Math.floor(rng() * arr.length)]; }
+function shuffle(rng, arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
+function bark(key) { const list = BARKS[key]; return list ? list[Math.floor(R() * list.length)] : ""; }
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+// Map generation --------------------------------------------------------
+const TIER_OF_2D6 = { 2: "life", 12: "life", 3: "huge", 11: "huge", 4: "special", 10: "special", 5: "unique", 9: "unique", 6: "common", 8: "common", 7: "extreme" };
+const TIER_SIZE = { extreme: 6, common: 8, unique: 8, special: 6, huge: 12, life: 10 };
+const TIER_LABEL = { extreme: "Extremely common", common: "Common", unique: "Unique", special: "Special", huge: "Huge", life: "Life-changing" };
+
+function generateMap(scen, seed, char) {
+  const rng = mulberry32(hashStr(seed + "|map|" + scen.id));
+  const W = 5, H = 5, N = RULES.rooms;
+  const key = (x, y) => x + "," + y;
+  const cells = new Map();
+  const start = { x: 0, y: 2 };
+  cells.set(key(start.x, start.y), { x: start.x, y: start.y, id: 0, adj: new Set() });
+  const list = [cells.get(key(start.x, start.y))];
+  const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  let guard = 0;
+  while (list.length < N && guard++ < 5000) {
+    const c = pick(rng, list);
+    const [dx, dy] = pick(rng, dirs);
+    const nx = c.x + dx, ny = c.y + dy;
+    if (nx < 0 || ny < 0 || nx >= W || ny >= H || cells.has(key(nx, ny))) continue;
+    const n = { x: nx, y: ny, id: list.length, adj: new Set() };
+    cells.set(key(nx, ny), n); list.push(n);
+    n.adj.add(c.id); c.adj.add(n.id);
+  }
+  // add a few loops
+  let loops = 0;
+  for (const c of shuffle(rng, list.slice())) {
+    if (loops >= 3) break;
+    for (const [dx, dy] of dirs) {
+      const o = cells.get(key(c.x + dx, c.y + dy));
+      if (o && !c.adj.has(o.id) && rng() < 0.35) { c.adj.add(o.id); o.adj.add(c.id); loops++; break; }
+    }
+  }
+  const bfs = (from, blocked) => { const d = new Array(list.length).fill(-1); const par = new Array(list.length).fill(-1); d[from] = 0; const q = [from]; while (q.length) { const u = q.shift(); for (const v of list[u].adj) { if (d[v] < 0 && !(blocked && blocked.has(v))) { d[v] = d[u] + 1; par[v] = u; q.push(v); } } } return { d, par }; };
+  const { d: dist, par } = bfs(0);
+  let goal = 0; dist.forEach((v, i) => { if (v > dist[goal]) goal = i; });
+  const path = []; for (let u = goal; u >= 0; u = par[u]) path.unshift(u);
+  const lockA = path[Math.max(1, Math.min(path.length - 2, Math.ceil(path.length / 2)))];
+  const r1 = bfs(0, new Set([lockA, goal])).d;
+  const R1 = list.map(c => c.id).filter(i => r1[i] >= 0);
+  const R2 = list.map(c => c.id).filter(i => r1[i] < 0 && i !== lockA && i !== goal);
+  const maxR1 = Math.max(...R1.map(i => dist[i]));
+  let keyACands = R1.filter(i => i !== 0 && dist[i] >= Math.max(2, Math.floor(maxR1 / 2)));
+  if (!keyACands.length) keyACands = R1.filter(i => i !== 0);
+  const keyARoom = pick(rng, keyACands);
+  const keyBRoom = R2.length ? pick(rng, R2.slice().sort((a, b) => dist[b] - dist[a]).slice(0, Math.max(1, Math.ceil(R2.length / 2)))) : lockA;
+  let safe1Cands = R1.filter(i => i !== 0 && i !== keyARoom && dist[i] === 2);
+  if (!safe1Cands.length) safe1Cands = R1.filter(i => i !== 0 && i !== keyARoom);
+  const safe1 = safe1Cands.length ? pick(rng, safe1Cands) : null;
+  const safe2Cands = R2.filter(i => i !== keyBRoom);
+  const safe2 = R2.length >= 3 && safe2Cands.length ? pick(rng, safe2Cands) : null;
+
+  // build rooms
+  const used = {};
+  const rooms = list.map(c => {
+    const r = { id: c.id, x: c.x, y: c.y, adj: [...c.adj], zombies: [], items: [], docs: [], searched: false, visited: false, known: false, locked: null, dark: false, safe: false, threat: 0, jam: [] };
+    let def, tier;
+    if (c.id === 0) { def = scen.entry; tier = "entry"; }
+    else if (c.id === goal) { def = scen.goalRoom; tier = "goal"; r.isGoal = true; }
+    else if (c.id === lockA) { def = scen.lockA; tier = "lock"; r.locked = "A"; }
+    else if (c.id === safe1 || c.id === safe2) { def = scen.safe; tier = "safe"; r.safe = true; }
+    else {
+      const roll = rint(rng, 6) + rint(rng, 6);
+      tier = TIER_OF_2D6[roll];
+      def = pick(rng, scen.rooms[tier]);
+      r.tierRoll = roll;
+    }
+    let name = def.name;
+    used[name] = (used[name] || 0) + 1;
+    if (used[name] > 1) name += " " + String.fromCharCode(64 + used[name]);
+    r.name = name; r.desc = def.desc; r.noise = def.noise || "normal"; r.tier = tier;
+    r.size = def.size || TIER_SIZE[tier] || 8;
+    if (["extreme", "common", "unique", "special", "life"].includes(tier) && rng() < 0.10) { r.size = 4; r.cramped = true; }
+    // zombies: 1d4-1, none in entry / safe
+    if (!r.safe && c.id !== 0) {
+      const n = rint(rng, 4) - 1;
+      for (let i = 0; i < n; i++) r.zombies.push(makeZombie(rng, r.size));
+    }
+    return r;
+  });
+  rooms[keyARoom].items.push({ type: "keyA" });
+  rooms[keyBRoom].items.push({ type: "keyB" });
+  // loot pool
+  const pool = ["hgAmmo", "hgAmmo", "hgAmmo", "shells", "shells", "medkit", "medkit", "medkit", "trauma", "adrenaline", "lastResort", "pouch"];
+  if (!char.startShotgun) pool.push("shotgun");
+  const lootRooms = rooms.filter(r => r.id !== 0 && !r.safe).map(r => r.id);
+  shuffle(rng, pool).forEach((t, i) => {
+    // prefer special-tier rooms for ammo
+    let rid = lootRooms[i % lootRooms.length];
+    if ((t === "hgAmmo" || t === "shells") && rng() < 0.5) { const sp = rooms.filter(r => r.tier === "special"); if (sp.length) rid = pick(rng, sp).id; }
+    const it = { type: t };
+    if (t === "hgAmmo") it.qty = 16; if (t === "shells") it.qty = 6; if (t === "shotgun") it.loaded = 2;
+    rooms[rid].items.push(it);
+  });
+  // documents: life-tier rooms first, then random
+  const docRooms = shuffle(rng, rooms.filter(r => r.id !== 0).map(r => r.id)).sort((a, b) => (rooms[b].tier === "life") - (rooms[a].tier === "life"));
+  scen.docs.forEach((_, i) => rooms[docRooms[i % docRooms.length]].docs.push(i));
+  return { rooms, meta: { goal, lockA, keyARoom, keyBRoom, safe1, safe2, pathLen: path.length } };
+}
+
+let ZID = 1;
+function makeZombie(rng, size, opts = {}) {
+  const hp = rint(rng, 6) >= 5 ? 3 : 2;
+  const b = rint(rng, 6);
+  const beh = b <= 3 ? "shambler" : b <= 5 ? "lurcher" : "grabber";
+  const maxBand = bandsFor(size) - 1;
+  return { id: ZID++, hp, maxhp: hp, beh, band: opts.band != null ? Math.min(opts.band, maxBand) : Math.floor(rng() * (maxBand + 1)), t: 0, hold: false, stalker: false };
+}
+function bandsFor(size) { return size <= 4 ? 1 : size <= 6 ? 2 : 3; }
+
+// New game --------------------------------------------------------------
+function newGame(cfg) {
+  const scen = SCENARIOS[cfg.scenario];
+  const char = Object.assign({}, cfg.character);
+  char.startShotgun = char.perk === "START_SHOTGUN" || char.weapon === "shotgun";
+  ZID = 1;
+  const { rooms, meta } = generateMap(scen, cfg.seed, char);
+  R = mulberry32(hashStr(cfg.seed + "|dice"));
+  G = {
+    v: RULES.version, seed: cfg.seed, scenId: scen.id, scen, char, rooms, meta,
+    cur: 0, prev: null, clock: 0, wounds: 0, maxWounds: RULES.wounds + (char.perk === "HARDY" ? 1 : 0),
+    inv: [], slots: RULES.baseSlots, stash: [], equip: "handgun", mode: "normal",
+    phase: "explore", combat: null, stalker: { dist: 3, active: false }, escDone: 0, dawnWarned: false,
+    usedMaster: false, over: null, lines: [], dice: [], pendingFail: null,
+    stats: { kills: 0, shots: 0, hits: 0, woundsTaken: 0, healsUsed: 0, ambushes: 0, noisePulls: 0, roomsVisited: 1, fled: 0, turnovers: 0 },
+    runId: (cfg.seed + "-" + Date.now().toString(36)).replace(/[^A-Za-z0-9_\-]/g, ""), startedAt: new Date().toISOString(), events: [], notes: ""
+  };
+  // starting kit
+  if (char.weapon === "shotgun") { addItem({ type: "shotgun", loaded: 4 }); addItem({ type: "shells", qty: 6 }); G.equip = "shotgun"; }
+  else { addItem({ type: "handgun", loaded: 6 }); addItem({ type: "hgAmmo", qty: 16 }); }
+  addItem({ type: "medkit" });
+  if (char.custom) addItem({ type: char.item });
+  else addItem({ type: "lastResort" });
+  if (char.perk === "START_SHOTGUN") { addItem({ type: "shotgun", loaded: 4 }); addItem({ type: "shells", qty: 6 }); }
+  if (char.perk === "EXTRA_AMMO") addItem({ type: "hgAmmo", qty: 16 });
+  if (char.perk === "SPARE_SHIV") addItem({ type: "lastResort" });
+  const r0 = room(); r0.visited = true; r0.known = true; r0.searched = false;
+  r0.adj.forEach(i => G.rooms[i].known = true);
+  say("pa", pickPA("warn"));
+  say("narr", scen.intro);
+  logEv("start", { scenario: scen.id, character: { name: char.name, role: char.role, fight: char.fight, wits: char.wits, perk: char.perk || null, custom: !!char.custom }, map: meta, rooms: rooms.map(r => ({ id: r.id, name: r.name, size: r.size, z: r.zombies.length, tier: r.tier })) });
+  return G;
+}
+
+// Helpers ---------------------------------------------------------------
+function room(id) { return G.rooms[id == null ? G.cur : id]; }
+function itemDef(t) { const d = Object.assign({}, ITEMS[t]); if (t === "keyA") d.name = G.scen.keyA.name; if (t === "keyB") d.name = G.scen.keyB.name; return d; }
+function slotsUsed() { return G.inv.filter(i => ITEMS[i.type].slot).length; }
+function hasItem(t) { return G.inv.find(i => i.type === t); }
+function ammoType(w) { return w === "handgun" ? "hgAmmo" : w === "shotgun" ? "shells" : null; }
+function reserve(w) { const t = ammoType(w); return G.inv.filter(i => i.type === t).reduce((s, i) => s + i.qty, 0); }
+function gun() { return G.inv.find(i => i.type === G.equip); }
+function termOne() { return G.scen.term.one; }
+function healthName() { const n = RULES.healthNames.slice(); if (G.maxWounds === 5) n.splice(4, 0, "Failing"); return n[Math.min(G.wounds, n.length - 1)]; }
+function pickPA(k) { const l = G.scen.pa[k] || []; return l.length ? l[Math.floor(R() * l.length)] : ""; }
+function say(kind, text) { if (!text) return; G.lines.push({ kind, text, clock: G.clock }); if (G.lines.length > 200) G.lines.shift(); }
+
+function addItem(it) {
+  const def = ITEMS[it.type];
+  if (def.kind === "pouch") { G.slots = Math.min(RULES.maxSlots, G.slots + 1); return true; }
+  if (def.kind === "ammo") {
+    let q = it.qty;
+    for (const s of G.inv) if (s.type === it.type && s.qty < def.cap) { const add = Math.min(def.cap - s.qty, q); s.qty += add; q -= add; }
+    while (q > 0) { if (slotsUsed() >= G.slots) { it.qty = q; return false; } const add = Math.min(def.cap, q); G.inv.push({ type: it.type, qty: add }); q -= add; }
+    return true;
+  }
+  if (def.slot && slotsUsed() >= G.slots) return false;
+  G.inv.push(Object.assign({}, it));
+  return true;
+}
+function consumeAmmo(w, n) { const t = ammoType(w); let need = n; for (const s of G.inv) { if (s.type === t && need > 0) { const take = Math.min(s.qty, need); s.qty -= take; need -= take; } } G.inv = G.inv.filter(s => !(s.type === t && s.qty <= 0)); return n - need; }
+
+// Chances ---------------------------------------------------------------
+function darkMod() { return room().dark ? -1 : 0; }
+function fightTarget(extra = 0) { return clamp(G.char.fight + darkMod() + extra, 0, 10); }
+function witsTarget(extra = 0) { return clamp(G.char.wits + darkMod() + extra, 0, 10); }
+function pct(t) { return Math.round(clamp(t, 0, 10) * 10); }
+function ambushChance(r, threat) {
+  if (!r.zombies.length) return 0;
+  const p1 = Math.min(1, (threat + 1) / r.size);
+  return 1 - Math.pow(1 - p1, r.zombies.length);
+}
+function modeProtect() { // chance the Careful/Bold roll succeeds
+  if (G.mode === "careful") return witsTarget() / 10;
+  if (G.mode === "bold") return fightTarget() / 10;
+  return 0;
+}
+function effectiveAmbush(r) { return ambushChance(r, r.threat) * (1 - modeProtect()); }
+function noiseChance(w) {
+  const base = WEAPONS[w].noise; if (!base) return 0;
+  const r = room(); if (r.noise === "muffled") return 0;
+  return (base + (r.noise === "echo" ? 1 : 0)) / 10;
+}
+function adjacentSummary() {
+  const s = { cleared: 0, occupied: 0, unexplored: 0 };
+  room().adj.forEach(i => { const a = G.rooms[i]; if (a.safe) return; if (!a.visited) s.unexplored++; else if (a.zombies.length) s.occupied++; else s.cleared++; });
+  return s;
+}
+
+// Dice ------------------------------------------------------------------
+function roll(label, sides, need, mode = "under", harmful = false) { // under: success if v<=need ; over: success if v>=need. harmful: the roll succeeding is bad for the player
+  const v = rint(R, sides);
+  const ok = mode === "under" ? v <= need : v >= need;
+  G.dice.push({ label, sides, v, need, mode, ok, harmful });
+  return { v, ok };
+}
+function clearDice() { G.dice = []; }
+
+// Logging ---------------------------------------------------------------
+function snapshot() { const r = room(); return { clock: G.clock, w: G.wounds, room: r.name, rid: r.id, threat: r.threat, z: r.zombies.map(z => z.band + ":" + z.hp), mag: gun() ? gun().loaded : 0, res: reserve(G.equip), eq: G.equip, slots: slotsUsed() + "/" + G.slots, ap: G.combat ? G.combat.ap : null, mode: G.mode }; }
+function logEv(type, data) { G.events.push(Object.assign({ n: G.events.length, type, t: Date.now(), st: snapshot(), dice: G.dice.map(d => ({ l: d.label, s: d.sides, v: d.v, need: d.need, ok: d.ok })) }, data)); if (window.RunLog) RunLog.queue(); }
+
+// Clock -----------------------------------------------------------------
+function tick(n = 1) {
+  for (let i = 0; i < n; i++) {
+    if (G.over) return;
+    G.clock++;
+    if (G.clock % RULES.escalationEvery === 0 && G.clock < RULES.clockMax) escalate();
+    if (G.clock >= 70 && !G.dawnWarned) { G.dawnWarned = true; say("pa", pickPA("dawn")); }
+    if (G.clock >= RULES.clockMax) { endRun("dawn"); return; }
+  }
+}
+function escalate() {
+  const v = rint(R, 6);
+  G.dice.push({ label: "Escalation d6", sides: 6, v, need: 0, mode: "info", ok: null });
+  let kind;
+  if (v <= 2) {
+    kind = "wanderer";
+    const cands = room().adj.map(i => G.rooms[i]).filter(a => !a.safe && a.visited);
+    const target = cands.length ? pick(R, cands) : room().adj.map(i => G.rooms[i]).filter(a => !a.safe)[0];
+    if (target) { target.zombies.push(makeZombie(R, target.size, { band: 2 })); say("sys", "A wanderer moves into " + target.name + "."); }
+  } else if (v === 3) {
+    kind = "power";
+    [G.cur, ...room().adj].forEach(i => { if (!G.rooms[i].safe) G.rooms[i].dark = true; });
+    say("sys", "This room and the rooms next to it are now Dark: −1 Fight and −1 Wits there.");
+  } else if (v === 4) {
+    kind = "jam";
+    const opts = room().adj.filter(i => !room().jam.includes(i));
+    if (opts.length) { const j = pick(R, opts); room().jam.push(j); G.rooms[j].jam.push(G.cur); say("sys", "The door to " + (G.rooms[j].visited ? G.rooms[j].name : "an unexplored room") + " is jammed. Forcing it takes a Wits roll."); }
+  } else if (v === 5) {
+    kind = "stalker";
+    if (!G.stalker.active) { G.stalker.dist = Math.max(0, G.stalker.dist - 1); say("sys", cap(G.scen.stalker) + " is " + (G.stalker.dist === 0 ? "here." : G.stalker.dist + " step" + (G.stalker.dist === 1 ? "" : "s") + " away.")); if (G.stalker.dist === 0) spawnStalker(); }
+  } else { kind = "quiet"; }
+  say("pa", pickPA(kind));
+  G.escDone++;
+  logEv("escalation", { roll: v, kind });
+}
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function spawnStalker() {
+  if (room().safe) { G.stalker.pending = true; return; }
+  const z = { id: ZID++, hp: 5, maxhp: 5, beh: "lurcher", band: bandsFor(room().size) - 1, t: 0, hold: false, stalker: true };
+  room().zombies.push(z); G.stalker.active = true; G.stalker.pending = false;
+  say("narr", cap(G.scen.stalker) + ". " + G.scen.stalkerDesc);
+  if (G.phase === "explore") startCombat("stalker");
+}
+
+// Wounds ----------------------------------------------------------------
+function wound(src) {
+  if (G.wounds + 1 >= G.maxWounds) { const lr = hasItem("lastResort"); if (lr) { G.inv.splice(G.inv.indexOf(lr), 1); say("sys", "Last Resort used: the wound is cancelled."); logEv("lastResort", { src }); return; } }
+  G.wounds++; G.stats.woundsTaken++;
+  say("narr", bark("bite"));
+  if (G.wounds >= G.maxWounds) { endRun("death", src); return; }
+  if (G.wounds >= G.maxWounds - 1) say("narr", bark("lowHealth"));
+}
+
+// End -------------------------------------------------------------------
+function endRun(outcome, cause) {
+  if (G.over) return;
+  G.over = { outcome, cause: cause || null, clock: G.clock };
+  G.phase = "over";
+  if (outcome === "win") say("narr", G.scen.win + " " + bark("escape"));
+  else if (outcome === "dawn") say("narr", G.scen.lose);
+  else say("narr", bark("death"));
+  logEv("end", { outcome, cause: cause || null, stats: G.stats, clock: G.clock, wounds: G.wounds });
+  if (window.RunLog) RunLog.flush(true);
+}
+
+// ===== ACTIONS =====
+// Every action returns a descriptor used by the UI: {id, label, detail, chance (0..1|null), risk, cost, disabled, why, run}
+
+// ---------- Exploration ----------
+function exploreActions() {
+  const r = room(), A = [];
+  const hostile = r.zombies.length > 0;
+  const amb = hostile ? effectiveAmbush(r) : 0;
+  const riskTxt = hostile ? "Ambush " + Math.round(amb * 100) + "%" : null;
+  const careCost = (G.mode === "careful" && hostile && G.char.perk !== "QUIET_FEET") ? 1 : 0;
+
+  if (hostile) A.push({ id: "attack", group: "act", label: "Attack", detail: "Start combat. You act first.", chance: null, cost: "0 ticks", run: () => { clearDice(); startCombat("attack"); } });
+
+  if (!r.searched && !r.safe) {
+    const t = witsTarget();
+    A.push({ id: "search", group: "act", label: "Search room", detail: "Wits " + t + " → " + pct(t) + "% to search fast. A failed roll still finds everything but costs an extra tick" + (hostile ? " and another ambush check." : "."), chance: t / 10, risk: riskTxt, cost: (1 + careCost) + " tick" + (careCost ? "s" : "") + " (+1 if slow)", run: () => doSearch() });
+  }
+  if (r.isGoal) {
+    const ok = !!hasItem("keyB");
+    A.push({ id: "goal", group: "act", label: G.scen.goalRoom.action, detail: ok ? "You have the " + G.scen.keyB.name + "." : "Needs the " + G.scen.keyB.name + ".", disabled: !ok, chance: null, risk: riskTxt, cost: (1 + careCost) + " tick", run: () => nonAttack("goal", 1 + careCost, () => { tick(0); endRun("win"); }) });
+  }
+  // heals
+  G.inv.filter(i => ITEMS[i.type].kind === "heal").slice(0, 2).forEach(i => {
+    A.push({ id: "heal-" + i.type, group: "item", label: "Use " + itemDef(i.type).name, detail: "Heal " + healAmount(i.type) + " step" + (healAmount(i.type) > 1 ? "s" : "") + ".", disabled: G.wounds === 0, why: "You're not hurt.", chance: null, risk: riskTxt, cost: "1 tick", run: () => nonAttack("heal", 1, () => useHeal(i)) });
+  });
+  // reload (free outside combat)
+  const g = gun();
+  if (g && g.loaded < WEAPONS[G.equip].mag && reserve(G.equip) > 0) A.push({ id: "reload", group: "item", label: "Reload " + WEAPONS[G.equip].name, detail: "Free outside combat.", chance: null, cost: "0 ticks", run: () => { clearDice(); doReload(); logEv("reload", {}); } });
+  // swap weapon
+  const other = G.inv.find(i => (i.type === "handgun" || i.type === "shotgun") && i.type !== G.equip);
+  if (other) A.push({ id: "swap", group: "item", label: "Equip " + WEAPONS[other.type].name, detail: "Free outside combat.", chance: null, cost: "0 ticks", run: () => { clearDice(); G.equip = other.type; say("sys", "Equipped " + WEAPONS[other.type].name + "."); logEv("equip", { w: other.type }); } });
+
+  // moves
+  const dirName = (a) => a.y < r.y ? "North" : a.y > r.y ? "South" : a.x > r.x ? "East" : "West";
+  r.adj.forEach(i => {
+    const a = G.rooms[i];
+    const jammed = r.jam.includes(i);
+    let label = dirName(a) + " · " + (a.visited || a.locked || a.isGoal ? a.name : "Unexplored room");
+    let detail = a.visited ? (a.safe ? "Safe room." : a.zombies.length ? a.zombies.length + " " + (a.zombies.length === 1 ? G.scen.term.one : G.scen.term.many) + " last seen." : "Clear when you left.") : "Unknown.";
+    let disabled = false, why = null;
+    if (a.locked === "A") {
+      const canOpen = hasItem("keyA") || (G.char.perk === "MASTER_KEYS" && !G.usedMaster);
+      detail = canOpen ? (hasItem("keyA") ? "Unlock with the " + G.scen.keyA.name + " (used up)." : "Your master ring opens it.") : "Locked. Needs the " + G.scen.keyA.name + ".";
+      disabled = !canOpen; why = "Locked";
+    }
+    if (jammed) {
+      if (G.char.perk === "MASTER_KEYS") detail = "Jammed. Your master ring forces it. " + detail;
+      else {
+        const t = witsTarget();
+        A.push({ id: "force-" + i, group: "move", label: "Force jammed door · " + dirName(a), detail: "Wits " + t + " → " + pct(t) + "% to force it open.", chance: t / 10, risk: riskTxt, cost: (1 + careCost) + " tick", run: () => nonAttack("force", 1 + careCost, () => { const res = roll("Force door (Wits)", 10, witsTarget()); if (res.ok) { r.jam = r.jam.filter(x => x !== i); a.jam = a.jam.filter(x => x !== r.id); say("sys", "The door gives."); } else say("sys", "It doesn't budge."); logEv("force", { ok: res.ok, to: i }); }) });
+        return;
+      }
+    }
+    A.push({ id: "move-" + i, group: "move", label, detail, disabled, why, chance: null, risk: riskTxt, cost: (1 + careCost) + " tick", run: () => nonAttack("move", 1 + careCost, () => enterRoom(i)) });
+  });
+  return A;
+}
+
+function healAmount(t) { return ITEMS[t].heal + (G.char.perk === "TRIAGE" ? 1 : 0); }
+function useHeal(i) {
+  const n = healAmount(i.type);
+  G.wounds = Math.max(0, G.wounds - n);
+  G.inv.splice(G.inv.indexOf(i), 1);
+  G.stats.healsUsed++;
+  say("narr", bark("heal")); say("sys", "Healed " + n + ". Now " + healthName() + ".");
+}
+function doReload() {
+  const g = gun(); const need = WEAPONS[G.equip].mag - g.loaded;
+  const got = consumeAmmo(G.equip, need); g.loaded += got;
+  say("narr", bark("reload")); say("sys", "Reloaded " + got + ". " + g.loaded + "/" + WEAPONS[G.equip].mag + " loaded, " + reserve(G.equip) + " in reserve.");
+}
+
+// A non-Attack action in a room: Careful/Bold protection, then ambush check, then the action.
+function nonAttack(kind, cost, fn) {
+  clearDice();
+  const r = room();
+  const hostile = r.zombies.length > 0;
+  if (hostile) {
+    let protectedOk = false;
+    if (G.mode === "careful") { const res = roll("Careful (Wits)", 10, witsTarget()); protectedOk = res.ok; if (res.ok) say("narr", bark("careful")); }
+    if (G.mode === "bold") { const res = roll("Bold (Fight)", 10, fightTarget()); protectedOk = res.ok; if (res.ok) say("narr", bark("bold")); else { say("narr", bark("boldFail")); boldNoise(); } }
+    if (!protectedOk) {
+      const amb = ambushCheck(r);
+      if (amb) { tick(cost); logEv("action", { kind, mode: G.mode, cost, ambushed: true }); ambush(amb); return; }
+    }
+  }
+  tick(cost);
+  if (G.over) return;
+  fn();
+  logEv("action", { kind, mode: hostile ? G.mode : "normal", cost });
+}
+function ambushCheck(r) {
+  const need = r.size - r.threat; let hit = null;
+  r.zombies.forEach((z, idx) => { const res = roll("Ambush d" + r.size + " (+" + r.threat + " threat)", r.size, need, "over", true); if (res.ok && !hit) hit = z; });
+  r.threat++;
+  return hit;
+}
+function ambush(z) {
+  G.stats.ambushes++;
+  say("narr", bark("ambush"));
+  say("sys", "Ambush. Your action is interrupted. A " + termOne() + " reaches Close and attacks first.");
+  z.band = 0;
+  const res = roll("Bite (Menace " + menaceOf(z) + ")", 10, menaceOf(z), "under", true);
+  if (res.ok) { wound("ambush"); if (z.beh === "grabber") { startCombat("ambush"); G.combat.grabbed = true; say("narr", bark("grabbed")); logEv("ambush", { bite: true }); return; } }
+  else say("narr", bark("biteMiss"));
+  logEv("ambush", { bite: res.ok });
+  if (!G.over) startCombat("ambush");
+}
+function boldNoise() {
+  const res = roll("Noise (shove)", 10, 3, "under", true);
+  if (res.ok) pullZombie(false);
+}
+function menaceOf(z) { return z.stalker ? 4 : RULES.menace; }
+
+function doSearch() {
+  const r = room();
+  const careCost = (G.mode === "careful" && r.zombies.length && G.char.perk !== "QUIET_FEET") ? 1 : 0;
+  nonAttack("search", 1 + careCost, () => {
+    const res = roll("Search (Wits)", 10, witsTarget());
+    const finish = () => {
+      r.searched = true;
+      if (!r.items.length && !r.docs.length) say("narr", bark("foundNothing"));
+      else { say("narr", r.items.some(i => i.type === "hgAmmo" || i.type === "shells") ? bark("foundAmmo") : bark("foundItem")); say("sys", "Found: " + [...r.items.map(i => itemLabel(i)), ...r.docs.map(d => "a document (\"" + G.scen.docs[d].title + "\")")].join(", ") + "."); }
+      logEv("search", { ok: res.ok, found: r.items.map(i => i.type), docs: r.docs.length });
+    };
+    if (res.ok) { finish(); return; }
+    say("narr", bark("searchSlow"));
+    // slow search: extra tick and, if hostile, another unprotected ambush check
+    if (r.zombies.length) { const amb = ambushCheck(r); tick(1); if (amb) { logEv("search", { ok: false, interrupted: true }); ambush(amb); return; } }
+    else tick(1);
+    if (!G.over) finish();
+  });
+}
+function itemLabel(i) { const d = itemDef(i.type); return d.name + (i.qty ? " (" + i.qty + ")" : "") + (i.loaded != null && d.kind === "weapon" ? " (" + i.loaded + " loaded)" : ""); }
+
+function enterRoom(id) {
+  const from = G.cur, a = G.rooms[id];
+  if (a.locked === "A") {
+    const k = hasItem("keyA");
+    if (k) { G.inv.splice(G.inv.indexOf(k), 1); say("sys", "Unlocked " + a.name + ". The " + G.scen.keyA.name + " is used up."); }
+    else { G.usedMaster = true; say("sys", "Your master ring opens " + a.name + "."); }
+    a.locked = null;
+  }
+  if (room().jam.includes(id) && G.char.perk === "MASTER_KEYS") { room().jam = room().jam.filter(x => x !== id); a.jam = a.jam.filter(x => x !== from); }
+  room().threat = 0;
+  G.prev = from; G.cur = id;
+  if (!a.visited) { a.visited = true; G.stats.roomsVisited++; }
+  a.adj.forEach(i => G.rooms[i].known = true);
+  a.threat = 0;
+  say("room", a.name + ". " + a.desc);
+  if (a.safe) say("sys", "Safe room. Nothing gets in here. The stash is shared by every safe room.");
+  if (a.zombies.length) { say("narr", bark("enterHostile")); say("sys", a.zombies.length + " " + (a.zombies.length === 1 ? G.scen.term.one : G.scen.term.many) + " here."); }
+  else if (!a.safe) say("narr", bark("enterEmpty"));
+  logEv("enter", { to: id, name: a.name, size: a.size, z: a.zombies.length, dark: a.dark });
+  if (G.stalker.pending && !a.safe) spawnStalker();
+}
+
+// Items / stash (free actions)
+function takeItem(idx) {
+  const r = room(); const it = r.items[idx];
+  if (!addItem(it)) { say("sys", "No free slot. Drop or stash something first."); return; }
+  r.items.splice(idx, 1);
+  say("sys", "Took " + itemLabel(it) + "."); logEv("take", { item: it.type, qty: it.qty || null });
+}
+function dropItem(idx) {
+  const it = G.inv[idx];
+  if ((it.type === "handgun" || it.type === "shotgun") && it.type === G.equip) { say("sys", "Equip another weapon before dropping this one."); return; }
+  G.inv.splice(idx, 1);
+  if (room().safe) { G.stash.push(it); say("sys", "Stashed " + itemLabel(it) + "."); logEv("stash", { item: it.type }); }
+  else { room().items.push(it); room().searched = true; say("sys", "Dropped " + itemLabel(it) + " here. The room will keep it."); logEv("drop", { item: it.type }); }
+}
+function takeStash(idx) {
+  const it = G.stash[idx];
+  if (!addItem(it)) { say("sys", "No free slot."); return; }
+  G.stash.splice(idx, 1); say("sys", "Took " + itemLabel(it) + " from the stash."); logEv("unstash", { item: it.type });
+}
+
+// ---------- Combat ----------
+function startCombat(reason) {
+  G.phase = "combat";
+  G.combat = { ap: RULES.ap, aim: 0, grabbed: false, incoming: [], reason, round: 1 };
+  if (reason === "attack") say("sys", "Combat. Your turn: 2 actions. A failed roll ends your turn.");
+  logEv("combatStart", { reason, z: room().zombies.map(z => ({ hp: z.hp, band: z.band, beh: z.beh, stalker: z.stalker })) });
+}
+function shotChance(z, w) {
+  let t = G.char.fight + darkMod();
+  if (w !== "knife" && z.band === 2 && G.char.perk !== "SHARPSHOOTER") t -= 1;
+  if (w !== "knife") t += G.combat.aim;
+  return clamp(t, 0, 10);
+}
+function combatActions() {
+  const r = room(), C = G.combat, A = [];
+  const w = G.equip, W = WEAPONS[w], g = gun();
+  r.zombies.forEach((z, idx) => {
+    const zl = (z.stalker ? cap(G.scen.stalker) : cap(termOne()) + " " + (idx + 1)) + " · " + RULES.bands[z.band];
+    if (g) {
+      const dmg = W.dmg[z.band];
+      const t = shotChance(z, w);
+      const nz = noiseChance(w);
+      const mods = []; if (z.band === 2 && G.char.perk !== "SHARPSHOOTER") mods.push("−1 Far"); if (r.dark) mods.push("−1 Dark"); if (C.aim) mods.push("+" + C.aim + " Aim");
+      A.push({ id: "shoot-" + z.id, group: "shoot", label: "Shoot " + zl, detail: W.name + ": " + dmg + " dmg at " + RULES.bands[z.band] + ". Fight " + G.char.fight + (mods.length ? " " + mods.join(" ") : "") + " → " + pct(t) + "%. Noise " + Math.round(nz * 100) + "%.", chance: t / 10, cost: "1 AP · 1 round", disabled: g.loaded <= 0 || dmg <= 0, why: g.loaded <= 0 ? "Empty. Reload." : "No damage at this range.", run: () => shoot(z, w) });
+    }
+    if (z.band === 0) {
+      const t = shotChance(z, "knife");
+      const kd = G.char.perk === "HEAVY_BLADE" ? 2 : 1;
+      A.push({ id: "knife-" + z.id, group: "shoot", label: "Knife " + zl, detail: kd + " dmg. Silent, no ammo. Fight " + G.char.fight + (r.dark ? " −1 Dark" : "") + " → " + pct(t) + "%.", chance: t / 10, cost: "1 AP", run: () => shoot(z, "knife") });
+    }
+  });
+  if (g && !C.aim) { const t = witsTarget(); A.push({ id: "aim", group: "tac", label: "Aim", detail: "Wits " + t + " → " + pct(t) + "%. Success: +2 Fight on your next shot this turn.", chance: t / 10, cost: "1 AP", disabled: C.ap < 2, why: "Needs a second action left to shoot.", run: () => doAim() }); }
+  const closeZ = r.zombies.some(z => z.band === 0);
+  if (C.grabbed) { const t = witsTarget(); A.push({ id: "break", group: "tac", label: "Break free", detail: "Wits " + t + " → " + pct(t) + "%. You're grabbed: no Step back or Flee until you break free.", chance: t / 10, cost: "1 AP", run: () => doBreak() }); }
+  if (bandsFor(r.size) > 1 && closeZ && !C.grabbed) { const t = witsTarget(); A.push({ id: "step", group: "tac", label: "Step back", detail: "Wits " + t + " → " + pct(t) + "%. Every " + termOne() + " at Close goes to Near and can't advance next phase.", chance: t / 10, cost: "1 AP", run: () => doStepBack() }); }
+  if (bandsFor(r.size) === 1 && closeZ) A.push({ id: "step", group: "tac", label: "Step back", detail: "Not possible: this room is too cramped (d4).", disabled: true, why: "Cramped", cost: "1 AP" });
+  if (g && g.loaded < W.mag && reserve(w) > 0) A.push({ id: "reload", group: "tac", label: "Reload", detail: W.name + ": " + g.loaded + "/" + W.mag + " loaded, " + reserve(w) + " in reserve. No roll.", chance: 1, cost: "1 AP", run: () => { clearDice(); doReload(); spendAP(1, "reload"); } });
+  const other = G.inv.find(i => (i.type === "handgun" || i.type === "shotgun") && i.type !== G.equip);
+  if (other) A.push({ id: "swap", group: "tac", label: "Swap to " + WEAPONS[other.type].name, detail: other.loaded + " loaded. No roll.", chance: 1, cost: "1 AP", run: () => { clearDice(); G.equip = other.type; say("sys", "Swapped to " + WEAPONS[other.type].name + "."); spendAP(1, "swap"); } });
+  G.inv.filter(i => ITEMS[i.type].kind === "heal").slice(0, 2).forEach(i => A.push({ id: "heal-" + i.type, group: "tac", label: "Use " + itemDef(i.type).name, detail: "Heal " + healAmount(i.type) + ". No roll.", chance: 1, cost: "1 AP", disabled: G.wounds === 0, why: "Not hurt.", run: () => { clearDice(); useHeal(i); spendAP(1, "heal"); } }));
+  if (G.prev != null) {
+    const t = witsTarget(closeZ ? -2 : 0);
+    A.push({ id: "flee", group: "tac", label: "Flee to " + G.rooms[G.prev].name, detail: "Wits " + G.char.wits + (closeZ ? " −2 Close" : "") + (r.dark ? " −1 Dark" : "") + " → " + pct(t) + "%. Uses both actions.", chance: t / 10, cost: "2 AP", disabled: C.ap < 2 || C.grabbed, why: C.grabbed ? "Grabbed" : "Needs 2 AP", run: () => doFlee() });
+  }
+  A.push({ id: "end", group: "tac", label: "End turn", detail: "Skip your remaining action.", chance: null, cost: "", run: () => { clearDice(); logEv("endTurn", {}); zombiePhase(); } });
+  return A;
+}
+
+function spendAP(n, kind) {
+  G.combat.ap -= n;
+  if (G.over) return;
+  if (!room().zombies.length && !G.combat.incoming.length) { endCombat(); return; }
+  if (G.combat.ap <= 0) zombiePhase();
+}
+function turnover(kind) {
+  G.stats.turnovers++;
+  say("narr", bark("turnover"));
+  say("sys", "Turnover: failed roll ends your turn.");
+  logEv("turnover", { kind });
+  zombiePhase();
+}
+function shoot(z, w) {
+  clearDice();
+  const W = WEAPONS[w];
+  const t = shotChance(z, w);
+  if (w !== "knife") { gun().loaded--; G.stats.shots++; }
+  const res = roll((w === "knife" ? "Knife" : "Shoot") + " (Fight)", 10, t);
+  G.combat.aim = w === "knife" ? G.combat.aim : 0;
+  if (w !== "knife") { const nz = noiseChance(w); if (nz > 0) { const n = roll("Noise " + W.name, 10, Math.round(nz * 10), "under", true); if (n.ok) pullZombie(true); } }
+  if (!res.ok) {
+    say("narr", bark("miss"));
+    logEv("attack", { w, ok: false, target: z.id, band: z.band, chance: t / 10 });
+    if (hasItem("adrenaline")) { G.pendingFail = { kind: "shoot", z, w, t }; return; }
+    turnover("attack"); return;
+  }
+  hitZombie(z, w === "knife" ? (G.char.perk === "HEAVY_BLADE" ? 2 : 1) : W.dmg[z.band], w, t);
+  if (!G.over) spendAP(1, "attack");
+}
+function hitZombie(z, dmg, w, t) {
+  G.stats.hits++;
+  z.hp -= dmg;
+  say("narr", bark("hit"));
+  logEv("attack", { w, ok: true, target: z.id, band: z.band, dmg, chance: t / 10 });
+  if (z.hp <= 0) knockdown(z);
+}
+function useAdrenaline() {
+  const pf = G.pendingFail; G.pendingFail = null;
+  const a = hasItem("adrenaline"); G.inv.splice(G.inv.indexOf(a), 1);
+  const res = roll("Adrenaline reroll (Fight)", 10, pf.t);
+  if (res.v === 10) wound("adrenaline");
+  logEv("adrenaline", { ok: res.ok, v: res.v });
+  if (G.over) return;
+  if (!res.ok) { turnover("attack"); return; }
+  hitZombie(pf.z, pf.w === "knife" ? (G.char.perk === "HEAVY_BLADE" ? 2 : 1) : WEAPONS[pf.w].dmg[pf.z.band], pf.w, pf.t);
+  if (!G.over) spendAP(1, "attack");
+}
+function declineAdrenaline() { G.pendingFail = null; turnover("attack"); }
+
+function knockdown(z) {
+  const r = room();
+  if (z.stalker) {
+    r.zombies.splice(r.zombies.indexOf(z), 1);
+    G.stalker.active = false; G.stalker.dist = 3;
+    say("narr", cap(G.scen.stalker) + " staggers back into the dark. It will be back.");
+    say("sys", cap(G.scen.stalker) + " driven off. It returns after 3 more stalker escalations.");
+    logEv("knockdown", { stalker: true });
+    return;
+  }
+  const v = roll("Knockdown d6", 6, 4, "over");
+  if (v.v >= 4) { r.zombies.splice(r.zombies.indexOf(z), 1); G.stats.kills++; say("narr", bark("kill")); say("sys", "Knockdown " + v.v + ": dead."); }
+  else if (v.v === 1) {
+    say("narr", bark("lunge")); say("sys", "Knockdown 1: it lunges before dying.");
+    const b = roll("Lunge bite (Menace " + RULES.menace + ")", 10, RULES.menace, "under", true);
+    r.zombies.splice(r.zombies.indexOf(z), 1); G.stats.kills++;
+    if (b.ok) wound("lunge"); else say("narr", bark("biteMiss"));
+  } else if (v.v === 2) { z.hp = 1; z.band = Math.max(0, z.band - 1); say("narr", bark("rises")); say("sys", "Knockdown 2: it gets up with 1 HP and moves closer."); }
+  else { z.hp = 1; say("narr", bark("rises")); say("sys", "Knockdown 3: it gets up where it fell, 1 HP."); }
+  logEv("knockdown", { v: v.v });
+}
+function doAim() { clearDice(); const res = roll("Aim (Wits)", 10, witsTarget()); logEv("aim", { ok: res.ok }); if (!res.ok) { turnover("aim"); return; } G.combat.aim = 2; say("sys", "Aimed: +2 Fight on your next shot this turn."); spendAP(1, "aim"); }
+function doBreak() { clearDice(); const res = roll("Break free (Wits)", 10, witsTarget()); logEv("break", { ok: res.ok }); if (!res.ok) { turnover("break"); return; } G.combat.grabbed = false; say("sys", "You tear free."); spendAP(1, "break"); }
+function doStepBack() {
+  clearDice(); const res = roll("Step back (Wits)", 10, witsTarget()); logEv("stepBack", { ok: res.ok });
+  if (!res.ok) { turnover("stepBack"); return; }
+  room().zombies.forEach(z => { if (z.band === 0) { z.band = 1; z.hold = true; } });
+  say("narr", bark("stepBack")); spendAP(1, "stepBack");
+}
+function doFlee() {
+  clearDice();
+  const closeZ = room().zombies.some(z => z.band === 0);
+  const res = roll("Flee (Wits" + (closeZ ? " −2" : "") + ")", 10, witsTarget(closeZ ? -2 : 0));
+  logEv("flee", { ok: res.ok });
+  if (!res.ok) { say("narr", bark("fleeFail")); turnover("flee"); return; }
+  G.stats.fled++;
+  say("narr", bark("flee"));
+  // incoming zombies still arrive in the room you left
+  G.combat.incoming.forEach(z => room().zombies.push(z));
+  G.combat = null; G.phase = "explore";
+  tick(1); if (G.over) return;
+  enterRoom(G.prev);
+  if (room().zombies.length) say("sys", "This room isn't empty either.");
+}
+function pullZombie(inCombat) {
+  const r = room();
+  const src = r.adj.map(i => G.rooms[i]).filter(a => !a.safe && a.zombies.filter(z => !z.stalker).length);
+  if (!src.length) { say("narr", bark("noiseNothing")); logEv("noise", { pulled: false }); return; }
+  const a = pick(R, src); const z = a.zombies.find(z => !z.stalker);
+  a.zombies.splice(a.zombies.indexOf(z), 1);
+  z.band = bandsFor(r.size) - 1; z.hold = false; z.t = 0;
+  G.stats.noisePulls++;
+  say("narr", bark("noise"));
+  if (inCombat) { G.combat.incoming.push(z); say("sys", "Something heard that. A " + termOne() + " from " + (a.visited ? a.name : "an unexplored room") + " arrives after the next zombie phase."); }
+  else { r.zombies.push(z); say("sys", "The noise draws a " + termOne() + " in from " + (a.visited ? a.name : "an unexplored room") + "."); }
+  logEv("noise", { pulled: true, from: a.id });
+}
+
+function zombiePhase() {
+  const r = room(), C = G.combat;
+  if (!C) return;
+  G.pendingFail = null;
+  const bites = [];
+  for (const z of r.zombies.slice()) {
+    if (G.over) break;
+    if (z.hold) { z.hold = false; continue; }
+    if (z.band > 0) {
+      z.t++;
+      const moves = (z.beh === "lurcher" || z.stalker) ? true : z.t % 2 === 0;
+      if (moves) z.band--;
+      continue;
+    }
+    const m = menaceOf(z);
+    const res = roll((z.stalker ? cap(G.scen.stalker) : cap(termOne())) + " bite (Menace " + m + ")", 10, m, "under", true);
+    bites.push(res.ok);
+    if (res.ok) { wound(z.stalker ? "stalker" : "bite"); if (z.beh === "grabber" && !G.over) { C.grabbed = true; say("narr", bark("grabbed")); } }
+    else say("narr", bark("biteMiss"));
+  }
+  if (C.incoming.length) { C.incoming.forEach(z => r.zombies.push(z)); say("sys", C.incoming.length + " more arrive" + (C.incoming.length === 1 ? "s" : "") + " at " + RULES.bands[bandsFor(r.size) - 1] + "."); C.incoming = []; }
+  logEv("zombiePhase", { bites });
+  if (G.over) return;
+  tick(1);
+  if (G.over) return;
+  C.ap = RULES.ap; C.aim = 0; C.round++;
+  if (!r.zombies.length) endCombat();
+}
+function endCombat() {
+  say("sys", "The room is clear.");
+  logEv("combatEnd", {});
+  G.combat = null; G.phase = "explore"; room().threat = 0;
+}
+
+// ===== UI =====
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+let ACTS = [];
+let SETUP = { scenario: "hospital", charId: "janitor", seed: randomSeed(), custom: { fight: 5, weapon: "handgun", item: "lastResort" } };
+
+// ---------- Setup ----------
+function renderSetup() {
+  const s = SCENARIOS[SETUP.scenario];
+  if (!s.presets.find(p => p.id === SETUP.charId) && SETUP.charId !== "custom") SETUP.charId = s.presets[1].id;
+  const cards = s.presets.map(p => `
+    <button class="char ${SETUP.charId === p.id ? "sel" : ""}" data-char="${p.id}" id="char-${p.id}">
+      <span class="char-role">${esc(p.role)}</span>
+      <span class="char-name">${esc(p.name)}</span>
+      <span class="char-stats"><b>Fight ${p.fight}</b> · <b>Wits ${p.wits}</b></span>
+      <span class="char-perk">${esc(PERKS[p.perk].name)}: ${esc(PERKS[p.perk].text)}</span>
+      <span class="char-intro">${esc(p.intro)}</span>
+    </button>`).join("");
+  const c = SETUP.custom;
+  $("#setup").innerHTML = `
+    <div class="setup-wrap">
+      <header class="brand"><h1>Night Shift</h1><p class="brand-sub">A survival-horror crawl. Playtest build ${esc(RULES.version)}.</p></header>
+      <section class="setup-grid">
+        <div class="setup-col">
+          <label class="lbl" for="scenario">Scenario</label>
+          <select id="scenario">${Object.values(SCENARIOS).map(x => `<option value="${x.id}" ${x.id === SETUP.scenario ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>
+          <p class="tagline">${esc(s.tagline)}</p>
+          <p class="goal"><span class="lbl">Goal</span> ${esc(s.goal)}</p>
+          <label class="lbl" for="seed">Seed code</label>
+          <div class="seed-row"><input id="seed" value="${esc(SETUP.seed)}" spellcheck="false" autocomplete="off"><button class="ghost" id="reseed">New seed</button></div>
+          <p class="fine">The same seed builds the same map and the same dice sequence.</p>
+        </div>
+        <div class="setup-col wide">
+          <span class="lbl">Character</span>
+          <div class="chars">${cards}
+            <button class="char ${SETUP.charId === "custom" ? "sel" : ""}" data-char="custom" id="char-custom">
+              <span class="char-role">Custom</span><span class="char-name">Your own survivor</span>
+              <span class="char-stats"><b>Fight ${c.fight}</b> · <b>Wits ${10 - c.fight}</b></span>
+              <span class="char-perk">No perk. Pick your weapon and one item.</span>
+            </button>
+          </div>
+          <div class="custom" ${SETUP.charId === "custom" ? "" : "hidden"}>
+            <label class="lbl" for="cfight">Fight <b id="cf">${c.fight}</b> · Wits <b id="cw">${10 - c.fight}</b></label>
+            <input type="range" id="cfight" min="2" max="8" value="${c.fight}">
+            <div class="custom-row">
+              <label class="lbl" for="cweapon">Weapon</label>
+              <select id="cweapon"><option value="handgun" ${c.weapon === "handgun" ? "selected" : ""}>Handgun (6 loaded + 16 rounds)</option><option value="shotgun" ${c.weapon === "shotgun" ? "selected" : ""}>Shotgun (4 loaded + 6 shells)</option></select>
+              <label class="lbl" for="citem">Extra item</label>
+              <select id="citem">${["lastResort", "medkit", "hgAmmo", "adrenaline"].map(t => `<option value="${t}" ${c.item === t ? "selected" : ""}>${ITEMS[t].name}</option>`).join("")}</select>
+            </div>
+          </div>
+          <button class="primary" id="begin">Begin the night</button>
+        </div>
+      </section>
+      <details class="howto"><summary>How the odds work</summary>
+        <ul>
+          <li>Every check is a d10. Roll at or under the target to succeed. Target 6 = 60%. Each modifier is exactly ±10%.</li>
+          <li>Every button shows its chance before you commit. Risky moves near ${esc("the infected")} also show the ambush chance.</li>
+          <li><b>Combat:</b> 2 actions per turn. A failed roll ends your turn immediately (turnover), so do the safe things first.</li>
+          <li><b>Exploring</b> a room with enemies raises Threat and risks an ambush. <b>Careful</b> (Wits, +1 tick) or <b>Bold</b> (Fight, noisy if it fails) can skip the check.</li>
+          <li><b>Noise</b> from gunfire can pull an enemy from an adjacent room. Muffled rooms never make noise; echoing rooms make more.</li>
+          <li>The clock ends the run at ${RULES.clockMax}. Every ${RULES.escalationEvery} ticks, something gets worse.</li>
+        </ul>
+      </details>
+    </div>`;
+  $("#scenario").onchange = e => { SETUP.scenario = e.target.value; renderSetup(); };
+  document.querySelectorAll("[data-char]").forEach(b => b.onclick = () => { SETUP.charId = b.dataset.char; renderSetup(); });
+  $("#reseed").onclick = () => { SETUP.seed = randomSeed(); renderSetup(); };
+  $("#seed").oninput = e => SETUP.seed = e.target.value.trim().toUpperCase().slice(0, 24) || randomSeed();
+  const cf = $("#cfight"); if (cf) cf.oninput = e => { SETUP.custom.fight = +e.target.value; $("#cf").textContent = SETUP.custom.fight; $("#cw").textContent = 10 - SETUP.custom.fight; document.querySelector("#char-custom .char-stats").innerHTML = `<b>Fight ${SETUP.custom.fight}</b> · <b>Wits ${10 - SETUP.custom.fight}</b>`; };
+  const cw = $("#cweapon"); if (cw) cw.onchange = e => SETUP.custom.weapon = e.target.value;
+  const ci = $("#citem"); if (ci) ci.onchange = e => SETUP.custom.item = e.target.value;
+  $("#begin").onclick = beginRun;
+}
+function beginRun() {
+  const s = SCENARIOS[SETUP.scenario];
+  let character;
+  if (SETUP.charId === "custom") character = { name: "Custom survivor", role: "Custom", fight: SETUP.custom.fight, wits: 10 - SETUP.custom.fight, perk: null, custom: true, weapon: SETUP.custom.weapon, item: SETUP.custom.item };
+  else character = Object.assign({}, s.presets.find(p => p.id === SETUP.charId));
+  newGame({ scenario: SETUP.scenario, seed: SETUP.seed || randomSeed(), character });
+  $("#setup").hidden = true; $("#game").hidden = false;
+  RunLog.flush();
+  render();
+  window.scrollTo(0, 0);
+}
+
+// ---------- Game ----------
+function render() {
+  if (!G) return;
+  renderTop(); renderScene(); renderFeed(); renderDice(); renderActions(); renderSide(); renderEnd();
+}
+function renderTop() {
+  const nextEsc = RULES.escalationEvery - (G.clock % RULES.escalationEvery);
+  const pips = Array.from({ length: G.maxWounds }, (_, i) => `<i class="pip ${i < G.wounds ? "hurt" : ""}"></i>`).join("");
+  $("#top").innerHTML = `
+    <div class="top-id"><span class="scen">${esc(G.scen.name)}</span><span class="who">${esc(G.char.name)} · ${esc(G.char.role)}</span></div>
+    <div class="top-stats">
+      <span class="stat"><span class="k">Fight</span><b>${G.char.fight}</b></span>
+      <span class="stat"><span class="k">Wits</span><b>${G.char.wits}</b></span>
+      <span class="stat health ${G.wounds >= G.maxWounds - 1 ? "crit" : ""}"><span class="k">Health</span><span class="pips">${pips}</span><b>${esc(healthName())}</b></span>
+      <span class="stat clock"><span class="k">Clock</span><b>${G.clock}/${RULES.clockMax}</b><span class="bar"><span style="width:${(G.clock / RULES.clockMax) * 100}%"></span></span><span class="k">escalation in ${nextEsc}</span></span>
+      <span class="stat log ${RunLog.state}"><span class="k">Log</span><b>${esc(RunLog.label())}</b></span>
+    </div>`;
+}
+function renderScene() {
+  const r = room(); const nb = bandsFor(r.size);
+  const lanes = [2, 1, 0].map(b => {
+    const disabled = b >= nb;
+    const zs = r.zombies.filter(z => z.band === b).map(z => {
+      const idx = r.zombies.indexOf(z) + 1;
+      return `<span class="tok ${z.stalker ? "stalker" : ""}" title="${esc(z.beh)}"><b>${z.stalker ? "!" : idx}</b><span class="hp">${"■".repeat(Math.max(0, z.hp))}${"□".repeat(Math.max(0, z.maxhp - z.hp))}</span><span class="beh">${esc(z.stalker ? "stalker" : z.beh)}</span></span>`;
+    }).join("");
+    return `<div class="lane ${disabled ? "off" : ""}"><span class="lane-k">${RULES.bands[b]}</span><div class="lane-toks">${disabled ? "<span class=na>no room</span>" : zs}</div></div>`;
+  }).join("");
+  const tags = [`<span class="tag">d${r.size}${r.cramped ? " cramped" : ""}</span>`, `<span class="tag">${r.noise === "echo" ? "Echoing" : r.noise === "muffled" ? "Muffled" : "Normal acoustics"}</span>`];
+  if (r.dark) tags.push(`<span class="tag warn">Dark −1</span>`);
+  if (r.safe) tags.push(`<span class="tag safe">Safe room</span>`);
+  if (r.zombies.length && G.phase === "explore") tags.push(`<span class="tag warn">Threat ${r.threat}</span>`);
+  $("#scene").className = "scene " + (r.dark ? "dark " : "") + (G.phase === "combat" ? "fight" : "");
+  $("#scene").innerHTML = `
+    <div class="scene-head"><h2>${esc(r.name)}</h2><div class="tags">${tags.join("")}</div></div>
+    <p class="scene-desc">${esc(r.desc)}</p>
+    <div class="lanes">${lanes}<div class="you"><span class="you-tok">YOU${G.combat && G.combat.grabbed ? " · GRABBED" : ""}</span></div></div>`;
+}
+function renderFeed() {
+  const lines = G.lines.slice(-7);
+  $("#feed").innerHTML = lines.map((l, i) => `<p class="line ${l.kind} ${i === lines.length - 1 ? "new" : ""}">${l.kind === "pa" ? "<span class=pa-k>PA</span> " : ""}${esc(l.text)}</p>`).join("");
+}
+function renderDice() {
+  $("#dice").innerHTML = G.dice.length ? G.dice.map(d => `
+    <div class="die ${d.ok == null ? "info" : (d.ok !== !!d.harmful) ? "ok" : "bad"}">
+      <span class="die-face">${d.v}</span>
+      <span class="die-meta"><span class="die-l">${esc(d.label)}</span><span class="die-n">d${d.sides}${d.mode === "under" ? " · need ≤ " + d.need : d.mode === "over" ? " · need ≥ " + d.need : ""}</span></span>
+    </div>`).join("") : `<p class="fine">Dice appear here when you act.</p>`;
+}
+function oddsClass(c) { return c == null ? "" : c >= 0.7 ? "good" : c >= 0.4 ? "mid" : "low"; }
+function actBtn(a) {
+  ACTS.push(a.run || null);
+  const idx = ACTS.length - 1;
+  return `<button class="act ${oddsClass(a.chance)}" data-act="${idx}" ${a.disabled ? "disabled" : ""} title="${esc(a.disabled ? a.why || "" : "")}">
+    <span class="act-main"><span class="act-l">${esc(a.label)}</span>${a.chance != null ? `<span class="odds">${Math.round(a.chance * 100)}%</span>` : ""}</span>
+    <span class="act-d">${esc(a.detail || "")}</span>
+    <span class="act-meta">${a.cost ? `<span>${esc(a.cost)}</span>` : ""}${a.risk ? `<span class="risk">${esc(a.risk)}</span>` : ""}</span>
+  </button>`;
+}
+function renderActions() {
+  ACTS = [];
+  let h = "";
+  if (G.over) { $("#actions").innerHTML = ""; return; }
+  if (G.phase === "combat") {
+    const C = G.combat;
+    h += `<div class="phase-head"><h3>Combat · round ${C.round}</h3><span class="ap">${Array.from({ length: RULES.ap }, (_, i) => `<i class="${i < C.ap ? "on" : ""}"></i>`).join("")} ${C.ap} action${C.ap === 1 ? "" : "s"} left</span></div>`;
+    if (C.incoming.length) h += `<p class="warnline">${C.incoming.length} incoming after the next zombie phase.</p>`;
+    if (G.pendingFail) {
+      h += `<div class="prompt"><p>Failed. Use Adrenaline to reroll? Same ${pct(G.pendingFail.t)}% chance. A 10 on the reroll costs 1 wound.</p>
+        <div class="prompt-row">${actBtn({ label: "Reroll with Adrenaline", chance: G.pendingFail.t / 10, detail: "10% chance of a wound.", run: useAdrenaline })}${actBtn({ label: "Accept the turnover", detail: "Their turn.", run: declineAdrenaline })}</div></div>`;
+    } else {
+      const A = combatActions();
+      h += `<div class="act-group"><span class="grp">Attack</span>${A.filter(a => a.group === "shoot").map(actBtn).join("") || `<p class="fine">Nothing in reach.</p>`}</div>`;
+      h += `<div class="act-group"><span class="grp">Tactics</span>${A.filter(a => a.group === "tac").map(actBtn).join("")}</div>`;
+      h += `<p class="fine">Zombie phase: each ${esc(termOne())} at Close bites on a d10 of ${RULES.menace} or less (${RULES.menace * 10}%). Others move closer.</p>`;
+    }
+  } else {
+    const r = room(); const hostile = r.zombies.length > 0;
+    h += `<div class="phase-head"><h3>${hostile ? "Hostile room" : r.safe ? "Safe room" : "Exploring"}</h3></div>`;
+    if (hostile) {
+      const t = witsTarget(), f = fightTarget(), base = ambushChance(r, r.threat);
+      h += `<div class="modes" role="radiogroup" aria-label="How you move">
+        ${[["normal", "Normal", "Ambush " + Math.round(base * 100) + "%"], ["careful", "Careful", "Wits " + pct(t) + "% to skip the check · +" + (G.char.perk === "QUIET_FEET" ? 0 : 1) + " tick"], ["bold", "Bold", "Fight " + pct(f) + "% to skip · fail: 30% noise"]].map(([k, l, d]) => `<button class="mode ${G.mode === k ? "on" : ""}" data-mode="${k}" role="radio" aria-checked="${G.mode === k}"><b>${l}</b><span>${esc(d)}</span></button>`).join("")}
+      </div>`;
+    }
+    const A = exploreActions();
+    ["act", "item", "move"].forEach(g => { const L = A.filter(a => a.group === g); if (L.length) h += `<div class="act-group"><span class="grp">${g === "act" ? "Actions" : g === "item" ? "Gear" : "Exits"}</span>${L.map(actBtn).join("")}</div>`; });
+  }
+  $("#actions").innerHTML = h;
+  document.querySelectorAll("#actions [data-act]").forEach(b => b.onclick = () => { const fn = ACTS[+b.dataset.act]; if (fn && !G.over) { fn(); render(); } });
+  document.querySelectorAll("#actions [data-mode]").forEach(b => b.onclick = () => { G.mode = b.dataset.mode; render(); });
+}
+function renderSide() {
+  const r = room();
+  // room contents
+  let h = "";
+  if (r.searched || r.safe) {
+    const items = r.items.map((it, i) => `<li><span>${esc(itemLabel(it))}</span><button class="mini" data-take="${i}" ${G.phase === "combat" ? "disabled" : ""}>Take</button></li>`).join("");
+    const docs = r.docs.map(d => `<li><span>“${esc(G.scen.docs[d].title)}”</span><button class="mini" data-doc="${d}">Read</button></li>`).join("");
+    h += `<div class="side-block"><h4>In this room</h4><ul class="list">${items}${docs}${!items && !docs ? "<li class=fine>Nothing here.</li>" : ""}</ul></div>`;
+  } else if (!r.safe) h += `<div class="side-block"><h4>In this room</h4><p class="fine">Not searched yet.</p></div>`;
+  if (r.safe) {
+    h += `<div class="side-block"><h4>Stash (shared)</h4><ul class="list">${G.stash.map((it, i) => `<li><span>${esc(itemLabel(it))}</span><button class="mini" data-unstash="${i}">Take</button></li>`).join("") || "<li class=fine>Empty. Drop items here to stash them.</li>"}</ul></div>`;
+  }
+  // inventory
+  const inv = G.inv.map((it, i) => {
+    const d = itemDef(it.type);
+    let extra = "";
+    if (d.kind === "weapon") extra = ` · ${it.loaded}/${WEAPONS[it.type].mag}${it.type === G.equip ? " · equipped" : ""}`;
+    return `<li class="${d.slot ? "" : "free"}"><span>${esc(d.name)}${it.qty ? " (" + it.qty + ")" : ""}${esc(extra)}</span><button class="mini" data-drop="${i}" ${G.phase === "combat" ? "disabled" : ""}>${r.safe ? "Stash" : "Drop"}</button></li>`;
+  }).join("");
+  h += `<div class="side-block"><h4>Inventory <span class="slots">${slotsUsed()}/${G.slots} slots</span></h4><ul class="list">${inv}<li class="free"><span>Knife · always carried</span></li></ul></div>`;
+  // map
+  h += `<div class="side-block"><h4>Map</h4>${mapSVG()}<p class="fine">Seed ${esc(G.seed)}</p></div>`;
+  $("#side").innerHTML = h;
+  document.querySelectorAll("[data-take]").forEach(b => b.onclick = () => { takeItem(+b.dataset.take); render(); });
+  document.querySelectorAll("[data-drop]").forEach(b => b.onclick = () => { dropItem(+b.dataset.drop); render(); });
+  document.querySelectorAll("[data-unstash]").forEach(b => b.onclick = () => { takeStash(+b.dataset.unstash); render(); });
+  document.querySelectorAll("[data-doc]").forEach(b => b.onclick = () => openDoc(+b.dataset.doc));
+}
+function mapSVG() {
+  const S = 44, P = 8;
+  const known = G.rooms.filter(r => r.visited || r.known);
+  let edges = "", nodes = "";
+  G.rooms.forEach(r => { if (!r.visited) return; r.adj.forEach(i => { const a = G.rooms[i]; if (i < r.id && a.visited || !a.visited) { edges += `<line x1="${P + r.x * S + 16}" y1="${P + r.y * S + 16}" x2="${P + a.x * S + 16}" y2="${P + a.y * S + 16}" class="${r.jam.includes(i) ? "jam" : ""}"/>`; } }); });
+  known.forEach(r => {
+    const cls = ["n", r.id === G.cur ? "cur" : "", r.visited ? "v" : "u", r.safe && r.visited ? "safe" : "", r.isGoal ? "goal" : "", r.locked ? "lock" : "", r.visited && r.zombies.length ? "hot" : ""].join(" ");
+    const glyph = r.isGoal ? "★" : r.locked ? "⌧" : r.safe && r.visited ? "+" : r.visited ? (r.zombies.length || "") : "?";
+    nodes += `<g class="${cls}"><rect x="${P + r.x * S}" y="${P + r.y * S}" width="32" height="32" rx="3"/><text x="${P + r.x * S + 16}" y="${P + r.y * S + 21}">${glyph}</text><title>${esc(r.visited || r.locked || r.isGoal ? r.name : "Unexplored")}</title></g>`;
+  });
+  return `<svg class="map" viewBox="0 0 ${P * 2 + 5 * S - 12} ${P * 2 + 5 * S - 12}" role="img" aria-label="Map of explored rooms">${edges}${nodes}</svg>
+    <p class="legend"><span>★ goal</span><span>⌧ locked</span><span>+ safe</span><span>n = enemies seen</span><span>? unexplored</span></p>`;
+}
+function openDoc(i) {
+  const d = G.scen.docs[i];
+  $("#modal").innerHTML = `<div class="doc" role="dialog" aria-modal="true" aria-label="${esc(d.title)}"><p class="doc-k">${esc(d.author)}</p><h3>${esc(d.title)}</h3><p class="doc-t">${esc(d.text)}</p><button class="primary" id="docclose">Close</button></div>`;
+  $("#modal").hidden = false; $("#docclose").onclick = () => { $("#modal").hidden = true; };
+  logEv("read", { doc: i });
+}
+function renderEnd() {
+  const el = $("#end");
+  if (!G.over) { el.hidden = true; return; }
+  el.hidden = false;
+  const o = G.over, st = G.stats;
+  const title = o.outcome === "win" ? "You made it out" : o.outcome === "dawn" ? "Dawn" : "You died";
+  el.innerHTML = `<div class="end-card">
+    <p class="end-k">${esc(G.scen.name)} · ${esc(G.char.name)}</p>
+    <h2>${title}</h2>
+    <p class="end-narr">${esc(G.lines.filter(l => l.kind === "narr").slice(-1)[0]?.text || "")}</p>
+    <dl class="end-stats">
+      <div><dt>Clock</dt><dd>${o.clock}/${RULES.clockMax}</dd></div><div><dt>Rooms</dt><dd>${st.roomsVisited}</dd></div>
+      <div><dt>Kills</dt><dd>${st.kills}</dd></div><div><dt>Shots / hits</dt><dd>${st.shots} / ${st.hits}</dd></div>
+      <div><dt>Wounds taken</dt><dd>${st.woundsTaken}</dd></div><div><dt>Heals used</dt><dd>${st.healsUsed}</dd></div>
+      <div><dt>Ambushes</dt><dd>${st.ambushes}</dd></div><div><dt>Noise pulls</dt><dd>${st.noisePulls}</dd></div>
+      <div><dt>Turnovers</dt><dd>${st.turnovers}</dd></div><div><dt>Seed</dt><dd>${esc(G.seed)}</dd></div>
+    </dl>
+    <label class="lbl" for="notes">Playtest notes (saved with this run's log)</label>
+    <textarea id="notes" rows="4" placeholder="What felt unfair, slow, confusing, or great?">${esc(G.notes)}</textarea>
+    <div class="end-row">
+      <button class="primary" id="savenotes">Save notes</button>
+      <button id="again">Same seed again</button>
+      <button id="newrun">New run</button>
+      <button class="ghost" id="dl">Download log</button>
+    </div>
+    <p class="fine" id="endstatus">Log: ${esc(RunLog.label())}. Run ID ${esc(G.runId)}.</p>
+  </div>`;
+  $("#savenotes").onclick = async () => { G.notes = $("#notes").value.slice(0, 4000); logEv("notes", { len: G.notes.length }); await RunLog.flush(true); $("#endstatus").textContent = "Notes saved. Log: " + RunLog.label() + "."; };
+  $("#again").onclick = () => { SETUP.seed = G.seed; beginRun(); };
+  $("#newrun").onclick = () => { SETUP.seed = randomSeed(); G = null; $("#game").hidden = true; $("#end").hidden = true; $("#setup").hidden = false; renderSetup(); };
+  const dl = $("#dl"); if (dl) dl.onclick = async () => {
+    const filename = "night-shift-" + G.runId + ".json", data = JSON.stringify(RunLog.payload(), null, 1);
+    if (!RunLog.dl) { // standalone page: plain browser download
+      const url = URL.createObjectURL(new Blob([data], { type: "application/json" }));
+      const a = document.createElement("a"); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); return;
+    }
+    try { await RunLog.dl.save({ filename, data }); } catch (e) { $("#endstatus").textContent = e && e.code === "declined" ? "Download cancelled." : "Download unavailable here."; } };
+}
+
+// ---------- Run log (db) ----------
+const RunLog = {
+  db: null, dl: null, state: "pending", err: null, writing: false, dirty: false, timer: null,
+  label() { return this.state === "on" ? "saving to playtest log" : this.state === "pending" ? "connecting" : this.state === "error" ? "save failed (" + this.err + ")" : "local only (download at end)"; },
+  async init() {
+    try { this.db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (e) { this.db = null; }
+    try { this.dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null; } catch (e) { this.dl = null; }
+    this.state = this.db ? "on" : "off";
+    if (G) { renderTop(); renderEnd(); }
+    if (this.db && G) this.flush();
+  },
+  payload() {
+    let events = G.events;
+    const base = { runId: G.runId, build: RULES.version, seed: G.seed, scenario: G.scenId, character: { name: G.char.name, role: G.char.role, fight: G.char.fight, wits: G.char.wits, perk: G.char.perk || null, custom: !!G.char.custom, weapon: G.char.weapon || null, item: G.char.item || null }, startedAt: G.startedAt, updatedAt: new Date().toISOString(), status: G.over ? G.over.outcome : "in-progress", cause: G.over ? G.over.cause : null, clock: G.clock, wounds: G.wounds, stats: G.stats, notes: G.notes, eventCount: events.length };
+    let doc = Object.assign({}, base, { events });
+    if (JSON.stringify(doc).length > 230000) { events = events.slice(0, 40).concat([{ type: "trimmed", n: -1 }], events.slice(-500)); doc = Object.assign({}, base, { events, trimmed: true }); }
+    return doc;
+  },
+  queue() { this.dirty = true; clearTimeout(this.timer); this.timer = setTimeout(() => this.flush(), 2500); },
+  async flush(force) {
+    if (!this.db || !G) return;
+    if (this.writing) { this.dirty = true; return; }
+    clearTimeout(this.timer);
+    this.writing = true; this.dirty = false;
+    try { await this.db.doc("runs/" + G.runId).set(this.payload()); this.state = "on"; }
+    catch (e) { this.state = "error"; this.err = (e && e.code) || "unknown"; }
+    this.writing = false;
+    if (G) renderTop();
+    if (this.dirty) this.queue();
+  }
+};
+window.RunLog = RunLog;
+
+// ---------- Boot ----------
+function boot() {
+  renderSetup();
+  RunLog.init();
+  window.addEventListener("keydown", e => { if (e.key === "Escape") $("#modal").hidden = true; });
+}
+boot();
+
+</script>
+</body>
+</html>
