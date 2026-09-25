@@ -23,4 +23,4 @@ Open `index.html` in a browser, or serve the folder: `python3 -m http.server`.
 ## Verification
 
 - 2026-09-25, local, served under `/night-shift/` in headless Chromium at 1280×800: page returned 200, no root-absolute asset paths, seed `ASH-4471` with the Paramedic ran explore → search → ambush → combat (8 dice rendered, clock 4/80), 0 console errors with fonts available.
-- Live site check: pending GitHub Pages being enabled.
+- 2026-09-25, live (GitHub Pages): the repo's `index.html`, `README.md` and `screenshot.png` match the locally tested files byte for byte (same git blob SHAs). https://justbost.com/night-shift/ serves the page (title "Night Shift", matching meta description), and `/night-shift/screenshot.png` returns image content. The sandbox couldn't open justbost.com in a browser, so the in-browser console check was done on the identical files locally, not on the live URL.
